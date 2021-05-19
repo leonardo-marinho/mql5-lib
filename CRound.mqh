@@ -15,6 +15,7 @@ class CRound: public CTrade
   {
 private:
    bool              m_opened;
+   bool              m_closed;
    bool              m_error;
    double            m_ask;
    double            m_ask_last;
@@ -22,6 +23,11 @@ private:
    double            m_bid_last;
    double            m_price;
    double            m_price_last;
+   double            m_profit;
+   double            m_volume;
+   double            m_tp;
+   double            m_sl;
+   ENUM_ORDER_TYPE   m_type;
 
 public:
                      CRound()
@@ -30,34 +36,25 @@ public:
 
    inline void       OpenOrder(const bool t_buy, const double t_volume, const double t_price, const double t_tp, const double t_sl)
      {
-      const double  sl =  t_sl * SymbolInfoDouble(Symbol(), SYMBOL_TRADE_TICK_SIZE);
-      const double  tp = t_tp * SymbolInfoDouble(Symbol(), SYMBOL_TRADE_TICK_SIZE);
-
-      if(t_buy)
+      if(PositionOpen(
+            _Symbol,
+            t_buy ? ORDER_TYPE_BUY : ORDER_TYPE_SELL,
+            t_volume, t_buy ? Ask() : Bid(), 0, 0,
+            "EA " + t_price + " - " + (t_tp) + " - " + (t_sl)))
         {
-         if(BuyLimit(t_volume, t_price, Symbol(), t_price - sl, t_price + tp, ORDER_TIME_SPECIFIED, TimeTradeServer()+PeriodSeconds(2),
-                      "EA " + t_price + " - " + (t_price + sl) + " - " + (t_price - tp)))
+         if(ResultRetcode() == TRADE_RETCODE_DONE)
            {
-            if(ResultRetcode() == TRADE_RETCODE_DONE)
-               OrderIsOpen(true);
+            m_volume = t_volume;
+            m_type = t_buy ? ORDER_TYPE_BUY_LIMIT : ORDER_TYPE_SELL_LIMIT;
+            m_sl = t_sl;
+            m_tp = t_tp;
+            m_opened  = true;
            }
          else
             m_error = true;
         }
       else
-         if(SellLimit(t_volume, t_price, Symbol(), t_price + sl, t_price - tp, ORDER_TIME_SPECIFIED, TimeTradeServer()+PeriodSeconds(2),
-                      "EA " + t_price + " - " + (t_price + sl) + " - " + (t_price - tp)))
-           {
-            if(ResultRetcode() == TRADE_RETCODE_DONE)
-               OrderIsOpen(true);
-           }
-         else
-            m_error = true;
-     }
-
-   inline void       OrderIsOpen(const bool t_opened)
-     {
-      m_opened = t_opened;
+         m_error  = true;
      }
 
    inline bool       OrderIsOpen(void)  const
@@ -65,10 +62,9 @@ public:
       return m_opened && !OrderIsClosed();
      }
 
-   inline bool       OrderIsClosed() const
+   inline bool       OrderIsClosed(void) const
      {
-      HistorySelect(0, TimeCurrent());
-      return ResultOrder() != 0 && HistoryOrdersTotal() > 1 && ResultOrder() == HistoryOrderGetTicket(HistoryOrdersTotal() - 2);
+      return m_closed;
      }
 
    inline bool       OrderError(void) const
@@ -81,19 +77,20 @@ public:
       return m_ask;
      }
 
-   inline void       CalculateAsk()
+   inline void       CalculateAsk(void)
      {
+      m_ask_last = m_ask;
       m_ask = SymbolInfoDouble(Symbol(), SYMBOL_ASK);
      }
 
-   inline double     LastAsk(void)
+   inline double     AskChange(void) const
      {
-      return m_ask_last;
+      return LastAsk() - Ask();
      }
 
-   inline void       CalculateLastAsk(void)
+   inline double     LastAsk(void) const
      {
-      m_ask_last = m_ask;
+      return m_ask_last;
      }
 
    inline double     Bid(void) const
@@ -103,6 +100,7 @@ public:
 
    inline void       CalculateBid(void)
      {
+      m_bid_last = m_bid;
       m_bid = SymbolInfoDouble(Symbol(), SYMBOL_BID);
      }
 
@@ -111,9 +109,64 @@ public:
       return m_bid_last;
      }
 
-   inline void       CalculateLastBid()
+   inline double     BidChange(void) const
      {
-      m_bid_last = m_bid;
+      return LastBid() - Bid();
+     }
+
+   inline double     Profit(void) const
+     {
+
+      if(OrderIsOpen())
+        {
+         HistorySelect(0, TimeCurrent());
+         ulong ticket = HistoryOrderGetTicket(HistoryOrdersTotal() - 1);
+
+         if(m_type == 2)
+           {
+            //return (Price() - HistoryOrderGetDouble(ticket, ORDER_PRICE_OPEN)) / SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE) * SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_VALUE) * m_volume;
+            return (Bid() - HistoryOrderGetDouble(ticket, ORDER_PRICE_OPEN)) / SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE) * SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_VALUE) * m_volume;
+           }
+
+         if(m_type == 3)
+           {
+            //return (HistoryOrderGetDouble(ticket, ORDER_PRICE_OPEN) - Price()) / SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE) * SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_VALUE) * m_volume;
+            return -(Ask() - HistoryOrderGetDouble(ticket, ORDER_PRICE_OPEN)) / SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE) * SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_VALUE) * m_volume;
+           }
+        }
+
+      if(OrderIsClosed())
+         return m_profit;
+
+      return 0;
+     }
+
+   inline void       ResolveClose(void)
+     {
+      if(OrderIsOpen())
+        {
+         double profit = Profit();
+         
+         double profit_ticks = profit / SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_VALUE) / m_volume;
+         bool tp = profit_ticks >= m_tp;
+         bool sl = profit_ticks <= -m_sl;
+
+         m_profit = profit;
+
+         if(tp || sl)
+           {
+            HistorySelect(0, TimeCurrent());
+
+            if(PositionClose(HistoryOrderGetTicket(HistoryOrdersTotal() - 1), 0))
+              {
+               if(ResultRetcode() == TRADE_RETCODE_DONE)
+                 {
+                  m_profit = profit;
+                  m_closed  = true;
+                 }
+              }
+           }
+        }
      }
 
    inline double     Price(void) const
@@ -123,6 +176,7 @@ public:
 
    inline void       CalculatePrice()
      {
+      m_price_last = m_price;
       m_price = SymbolInfoDouble(Symbol(), SYMBOL_LAST);
      }
 
@@ -131,32 +185,32 @@ public:
       return m_price_last;
      }
 
-   inline void       CalculateLastPrice()
+   inline double     PriceChange() const
      {
-      m_price_last = m_price;
+      return m_price - m_price_last;
      }
-     
-     inline double PriceLastChange() const  {
-      return SymbolInfoDouble(Symbol(), SYMBOL_PRICE_CHANGE);
-     }
-     
-     inline double PriceLastVolatility() const {
-      return SymbolInfoDouble(Symbol(), SYMBOL_PRICE_VOLATILITY);
-     }
-     
-     inline string State() const {
-      if (OrderError())
+
+   inline string     State() const
+     {
+      if(OrderError())
          return "Error";
-      
-      if (OrderIsOpen())
+
+      if(OrderIsOpen())
          return "Open";
-         
-      if (OrderIsClosed())
-         return "Closed";  
-         
-      return "Standy-By";    
+
+      if(OrderIsClosed())
+         return "Closed";
+
+      return "Standy-By";
+     }
+
+   inline ENUM_ORDER_TYPE type() const
+     {
+      return m_type;
      }
   };
 
 #endif
+//+------------------------------------------------------------------+
+
 //+------------------------------------------------------------------+

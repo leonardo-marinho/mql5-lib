@@ -10,15 +10,14 @@
 
 #define _DEBUG_VIRTUAL_METHODS false
 
-input int            TICK_RESET = 4;
 input double         VOLUMES = 2;
 input double         TP_TICK = 1;
 input double         SL_TICK = 3;
 input double         GAIN_LIMIT = 125;
 input double         LOSS_LIMIT = 50;
 input double         FEES = 2.68;
-input int            HOUR_START = 9;
-input double         MINUTE_START = 1;
+input int            HOUR_START = 10;
+input double         MINUTE_START = 0;
 input int            HOUR_END = 17;
 input double         MINUTE_END = 0;
 
@@ -43,10 +42,13 @@ protected:
    virtual void      OnOrderError(void) { if(_DEBUG_VIRTUAL_METHODS) Print("Event OnOrderError"); }
    virtual void      OnRoundInit(void) { if(_DEBUG_VIRTUAL_METHODS) Print("Event OnRoundInit"); }
    virtual void      OnTick(void) { if(_DEBUG_VIRTUAL_METHODS) Print("Event OnTick"); }
+   virtual void      OnValidTick(void) { if(_DEBUG_VIRTUAL_METHODS) Print("Event OnValidTick"); }
    virtual void      OnFirstIdleTick(void) { if(_DEBUG_VIRTUAL_METHODS) Print("Event OnFirstIdleTick"); }
    virtual void      OnIdleTick(void) { if(_DEBUG_VIRTUAL_METHODS) Print("Event OnIdleTick"); }
    virtual void      OnPositionTick(void) { if(_DEBUG_VIRTUAL_METHODS) Print("Event OnPositionTick"); }
    virtual void      OnDealTick(void) { if(_DEBUG_VIRTUAL_METHODS) Print("Event OnDealTick"); }
+   virtual void      OnProfit(void) { if(_DEBUG_VIRTUAL_METHODS) Print("Event OnProfit"); }
+   virtual void      OnLoss(void) { if(_DEBUG_VIRTUAL_METHODS) Print("Event OnLoss"); }
    virtual void      OnTimeWaiting(void) { if(_DEBUG_VIRTUAL_METHODS) Print("Event OnTimeWaiting"); }
    virtual void      OnTimeUp(void) { if(_DEBUG_VIRTUAL_METHODS) Print("Event OnTimeUp"); }
 
@@ -75,8 +77,6 @@ public:
 
    inline void       Tick(void)
      {
-      OnTick();
-
       const bool out_of_time = OutOfTime();
       const bool order_is_open = Round.OrderIsOpen();
       const bool order_is_closed = Round.OrderIsClosed();
@@ -84,11 +84,13 @@ public:
       const bool order_is_error = Round.OrderError();
 
       Round.CalculateAsk();
-      Round.CalculateLastAsk();
       Round.CalculateBid();
-      Round.CalculateLastBid();
       Round.CalculatePrice();
-      Round.CalculateLastPrice();
+      
+      OnTick();
+
+      if (!out_of_time)
+         OnValidTick();
 
       if(!order_is_open && !order_is_closed && !order_is_error && !order_is_done && !out_of_time)
         {
@@ -125,6 +127,12 @@ public:
                      CalculateProfitRounds();
                      CalculateLowestProfit();
                      CalculateHighestProfit();
+
+                     if(LastWasProfit())
+                        OnProfit();
+                     else
+                        OnLoss();
+
                      OnDealTick();
                      RoundInit();
                     }

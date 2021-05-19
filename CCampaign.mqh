@@ -14,17 +14,19 @@
 class CCampaign
   {
 private:
+   bool              m_last_was_profit;
    double            m_earns;
    double            m_fees;
    double            m_limit_loss;
    double            m_limit_gain;
    double            m_profit_lowest;
    double            m_profit_highest;
-   double            m_total;
-   int               m_time_start;
-   int               m_time_end;
+   double            m_time_start;
+   double            m_time_end;
    ulong             m_rounds;
    ulong             m_profit_rounds;
+   ulong             m_profit_in_row;
+   ulong             m_loss_in_row;
 
 protected:
    CRound*            Round;
@@ -41,7 +43,7 @@ protected:
 
    inline void       CalculateEarns()
      {
-      m_earns += HistoryDealGetDouble(HistoryDealGetTicket(HistoryDealsTotal()-1), DEAL_PROFIT);
+      m_earns += Round.Profit();
      }
 
    inline void       LimitLoss(double t_limit_loss)
@@ -76,7 +78,10 @@ protected:
 
    inline void       CalculateProfitRounds(void)
      {
-      m_profit_rounds += HistoryDealGetDouble(HistoryDealGetTicket(HistoryDealsTotal()-1), DEAL_PROFIT) > 0;
+      m_profit_rounds += Round.Profit() > 0;
+      m_last_was_profit = Round.Profit() > 0;
+      m_profit_in_row = m_last_was_profit ? m_profit_in_row + 1 : 0;
+      m_loss_in_row = m_last_was_profit ? 0 : m_loss_in_row + 1;
      }
 
    inline double     Fees() const
@@ -89,6 +94,11 @@ protected:
       m_fees += t_fees;
      }
 
+   inline bool       LastWasProfit(void) const
+     {
+      return m_last_was_profit;
+     }
+
    inline double     LowestProfit() const
      {
       return m_profit_lowest;
@@ -96,7 +106,7 @@ protected:
 
    inline void       CalculateLowestProfit(void)
      {
-      m_profit_lowest = m_total < m_profit_lowest ? m_total : m_profit_lowest;
+      m_profit_lowest = Total() < m_profit_lowest ? Total() : m_profit_lowest;
      }
 
    inline double     HighestProfit() const
@@ -106,7 +116,7 @@ protected:
 
    inline void       CalculateHighestProfit()
      {
-      m_profit_highest = m_total > m_profit_highest ? m_total : m_profit_highest;
+      m_profit_highest = Total() > m_profit_highest ? Total() : m_profit_highest;
      }
 
    inline ulong      Rounds() const
@@ -124,7 +134,7 @@ protected:
       return m_earns - m_fees;
      }
 
-   inline void       StartTime(const int t_hour, const int t_minute)
+   inline void       StartTime(const int t_hour, const double t_minute)
      {
       m_time_start = t_hour * 60 + t_minute;
      }
@@ -132,37 +142,48 @@ protected:
    inline bool       CalculateStartTime(void) const
      {
       MqlDateTime dt;
-      TimeCurrent(dt);
-      int minutes = dt.hour*60+dt.min+(dt.sec / 60);
+      TimeToStruct((long)TimeCurrent(), dt);
+      double minutes = dt.hour*60+dt.min+(dt.sec / 60);
       return minutes >= m_time_start;
      }
 
-   inline void       EndTime(const int t_hour, const int t_minute)
+   inline void       EndTime(const int t_hour, const double t_minute)
      {
       m_time_end = t_hour * 60 + t_minute;
      }
 
-   inline bool CalculateEndTime(void) const
+   inline bool       CalculateEndTime(void) const
      {
       MqlDateTime dt;
-      TimeCurrent(dt);
-      int minutes = dt.hour*60+dt.min+(dt.sec / 60);
-      
+      TimeToStruct((long)TimeCurrent(), dt);
+      double minutes = dt.hour*60+dt.min+(dt.sec / 60);
+
       return minutes < m_time_end;
      }
-     
-   inline bool OutOfTime() {
-      return !CalculateStartTime() || !CalculateEndTime(); 
-   }  
+
+   inline bool       OutOfTime()
+     {
+      return !CalculateStartTime() || !CalculateEndTime();
+     }
+
+   inline ulong      ProfitsInRow(void) const
+     {
+      return m_profit_in_row;
+     }
+
+   inline ulong      LossInRow(void) const
+     {
+      return m_loss_in_row;
+     }
 
    inline string     State() const
      {
-      if (!CalculateStartTime())
+      if(!CalculateStartTime())
          return "Waiting to Start";
-         
-      if (!CalculateEndTime())
-         return "Time up";   
-      
+
+      if(!CalculateEndTime())
+         return "Time up";
+
       if(CalculateLimitLoss())
          return "Limit Loss";
 
