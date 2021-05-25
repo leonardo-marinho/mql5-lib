@@ -43,7 +43,7 @@ protected:
 
    inline void       CalculateEarns()
      {
-      m_earns += Round.Profit();
+      m_earns += Round.Profit() > 3000 ? 0 : Round.Profit();
      }
 
    inline void       LimitLoss(double t_limit_loss)
