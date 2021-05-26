@@ -143,7 +143,8 @@ public:
 
       if(OrderIsClosed())
         {
-         return HistoryDealGetDouble(HistoryDealGetTicket(HistoryDealsTotal()), DEAL_PROFIT);
+         HistorySelect(0, TimeCurrent());
+         return HistoryDealGetDouble(HistoryDealGetTicket(HistoryDealsTotal() -1), DEAL_PROFIT);
         }
 
       return 0;
