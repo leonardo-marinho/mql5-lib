@@ -4,16 +4,23 @@
 //|                                             https://www.mql5.com |
 //+------------------------------------------------------------------+
 
-#include "TickReset.mq5"
+#define __DEBUG
+#define CONTEXT_TEST
 
-TickReset Strategy;
+#ifdef CONTEXT_TEST
+#include "Tests.mq5"
+CUnitTest Context;
+#else 
+#include "TickReset.mq5"
+TickReset Context;
+#endif 
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
 int OnInit()
   {
-   Strategy.Init();
+   Context.Init();
    return(INIT_SUCCEEDED);
   }
 //+------------------------------------------------------------------+
@@ -21,13 +28,13 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
-   Strategy.DeInit();
+   Context.DeInit();
   }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
 void OnTick()
   {
-   Strategy.Tick();
+   Context.Tick();
   }
 //+------------------------------------------------------------------+
