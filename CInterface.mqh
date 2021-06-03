@@ -77,7 +77,7 @@ public:
     * @brief Add label
     *
     */
-   inline void       AddLabel(const string t_label, string t_start_value = "", int t_index = -1, color t_label_color = LABEL_COLOR, color t_label_data_color = LABEL_COLOR)
+   inline uint       AddLabel(const string t_label, string t_start_value = "", int t_index = -1, color t_label_color = LABEL_COLOR, color t_label_data_color = LABEL_COLOR)
      {
       t_index = t_index < 0 ? m_labels_rows : t_index;
       m_label[t_index].Create(0, "Label"+IntegerToString(m_labels_rows), 0, LABELS_CORD_X, LABELS_CORD_Y + (LABELS_CORD_PADDING * (m_labels_rows + 1)));
@@ -92,6 +92,8 @@ public:
       m_label_data[t_index].Color(t_label_data_color);
       m_label_data[t_index].FontSize(FONT_SIZE);
       m_labels_rows++;
+      
+      return t_index;
      }
 
    /**

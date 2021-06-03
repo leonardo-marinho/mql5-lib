@@ -4,16 +4,8 @@
 //|                                             https://www.mql5.com |
 //+------------------------------------------------------------------+
 
-#define __DEBUG
-#define CONTEXT_TEST
-
-#ifdef CONTEXT_TEST
-#include "Tests.mq5"
-CUnitTest Context;
-#else 
-#include "TickReset.mq5"
-TickReset Context;
-#endif 
+#include "SignalScore.mq5"
+SignalScore Context;
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |

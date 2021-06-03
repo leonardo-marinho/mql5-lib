@@ -7,6 +7,7 @@
 #define __C_STRATEGY__
 
 #include "CCampaign.mqh"
+#include "CInterface.mqh"
 
 #define _DEBUG_VIRTUAL_METHODS false
 
@@ -36,6 +37,7 @@ private:
      }
 
 protected:
+   CInterface        Interface;
    virtual void      OnInit(void) { if(_DEBUG_VIRTUAL_METHODS) Print("Event OnInit"); }
    virtual void      OnDeInit(void) { if(_DEBUG_VIRTUAL_METHODS) Print("Event OnDeInit"); }
    virtual void      OnDone(void) { if(_DEBUG_VIRTUAL_METHODS) Print("Event OnDone"); }
@@ -66,6 +68,26 @@ public:
       LimitGain(GAIN_LIMIT);
       StartTime(HOUR_START, MINUTE_START);
       EndTime(HOUR_END, MINUTE_END);
+      Interface.AddLabel("Campaign");
+      Interface.AddLabel("Total", "0.0");
+      Interface.AddLabel("Earns", "0.0");
+      Interface.AddLabel("Fees", "0.0");
+      Interface.AddLabel("Rounds", "0");
+      Interface.AddLabel("Highest Profit", "0.0");
+      Interface.AddLabel("Lowest Profit", "0.0");
+      Interface.AddLabel("Start Time", "--:--:--");
+      Interface.AddLabel("Actual Time", "--:--:--");
+      Interface.AddLabel("State", "----");
+      Interface.AddLabel("");
+      Interface.AddLabel("Round");
+      Interface.AddLabel("Profit", "0.0");
+      Interface.AddLabel("Price", "0.0");
+      Interface.AddLabel("Ask", "0.0");
+      Interface.AddLabel("Bid", "0.0");
+      Interface.AddLabel("State", "----");
+      Interface.AddLabel("");
+      Interface.AddLabel("Strategy");
+      Interface.AddLabel("Rate", "0.0");
       OnInit();
       RoundInit();
      }
@@ -83,14 +105,22 @@ public:
       const bool order_is_done = LimitReached();
       const bool order_is_error = Round.OrderError();
 
-      Round.CalculateAsk();
-      Round.CalculateBid();
-      Round.CalculatePrice();
-      
-      OnTick();
+      Round.CalculateValues();
 
-      if (!out_of_time)
+      OnTick();
+      Interface.SetLabelData(TimeToString(TimeCurrent(), TIME_SECONDS), 8);
+      Interface.SetLabelData(State(), 9);
+
+      if(!out_of_time)
+        {
          OnValidTick();
+         Interface.SetLabelData(State(), 9);
+         Interface.SetLabelData("R$ " + DoubleToString(Round.Profit(), 2), 12);
+         Interface.SetLabelData("R$ " + DoubleToString(Round.Price(), 2), 13);
+         Interface.SetLabelData("R$ " + DoubleToString(Round.Ask(), 2), 14);
+         Interface.SetLabelData("R$ " + DoubleToString(Round.Bid(), 2), 15);
+         Interface.SetLabelData(Round.State(), 16);
+        }
 
       if(!order_is_open && !order_is_closed && !order_is_error && !order_is_done && !out_of_time)
         {
@@ -98,6 +128,7 @@ public:
            {
             m_first_idle_tick = false;
             OnFirstIdleTick();
+            Interface.SetLabelData(TimeToString(TimeCurrent(), TIME_SECONDS), 7);
            }
 
          OnIdleTick();
@@ -112,11 +143,19 @@ public:
               {
                OnOrderError();
                RoundInit();
+               Round.SetExpertMagicNumber(4444);
+               Round.SetDeviationInPoints(0);
+               Round.SetTypeFilling(ORDER_FILLING_FOK);
+               Round.SetMarginMode();
+               Round.LogLevel(0);
+               Interface.SetLabelData(State(), 9);
               }
             else
                if(order_is_open)
                  {
                   OnPositionTick();
+                  Interface.SetLabelData("R$ " + DoubleToString(Round.Profit(), 2), 12);
+                  Round.ResolveClose();
                  }
                else
                   if(order_is_closed)
@@ -134,6 +173,14 @@ public:
                         OnLoss();
 
                      OnDealTick();
+                     Interface.SetLabelData("R$ " + DoubleToString(Total(), 2), 1);
+                     Interface.SetLabelData("R$ " + DoubleToString(Earns(), 2), 2);
+                     Interface.SetLabelData("R$ " + DoubleToString(Fees(), 2), 3);
+                     Interface.SetLabelData(Rounds(), 4);
+                     Interface.SetLabelData("R$ " + DoubleToString(HighestProfit(), 2), 5);
+                     Interface.SetLabelData("R$ " + DoubleToString(LowestProfit(), 2), 6);
+                     Interface.SetLabelData("R$ " + DoubleToString(Round.Profit(), 2), 12);
+                     Interface.SetLabelData(DoubleToString(ProfitRounds() / (double)Rounds() * 100, 2) + "%", 19);
                      RoundInit();
                     }
                   else

@@ -157,12 +157,11 @@ protected:
       MqlDateTime dt;
       TimeToStruct((long)TimeCurrent(), dt);
       double minutes = dt.hour*60+dt.min+(dt.sec / 60);
-
       return minutes < m_time_end;
      }
 
    inline bool       OutOfTime()
-     {
+     {  
       return !CalculateStartTime() || !CalculateEndTime();
      }
 

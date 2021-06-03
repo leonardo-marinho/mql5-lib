@@ -82,10 +82,14 @@ public:
       return m_ask;
      }
 
-   inline void       CalculateAsk(void)
+   inline void       CalculateValues(void)
      {
       m_ask_last = m_ask;
       m_ask = SymbolInfoDouble(Symbol(), SYMBOL_ASK);
+      m_bid_last = m_bid;
+      m_bid = SymbolInfoDouble(Symbol(), SYMBOL_BID);
+      m_price_last = m_price;
+      m_price = SymbolInfoDouble(Symbol(), SYMBOL_LAST);
      }
 
    inline double     AskChange(void) const
@@ -101,12 +105,6 @@ public:
    inline double     Bid(void) const
      {
       return m_bid;
-     }
-
-   inline void       CalculateBid(void)
-     {
-      m_bid_last = m_bid;
-      m_bid = SymbolInfoDouble(Symbol(), SYMBOL_BID);
      }
 
    inline double     LastBid(void) const
@@ -143,7 +141,11 @@ public:
 
       if(OrderIsClosed())
         {
+         return m_profit;
          HistorySelect(0, TimeCurrent());
+         /*Print("Getting profit from deal: ", HistoryDealGetDouble(HistoryDealGetTicket(HistoryDealsTotal() -1), DEAL_PROFIT),
+               " | ", m_profit, " #", 
+               HistoryDealGetInteger(HistoryDealGetTicket(HistoryDealsTotal() -1), DEAL_TICKET));*/
          return HistoryDealGetDouble(HistoryDealGetTicket(HistoryDealsTotal() -1), DEAL_PROFIT);
         }
 
@@ -194,15 +196,6 @@ public:
    //+------------------------------------------------------------------+
    //|                                                                  |
    //+------------------------------------------------------------------+
-   inline void       CalculatePrice()
-     {
-      m_price_last = m_price;
-      m_price = SymbolInfoDouble(Symbol(), SYMBOL_LAST);
-     }
-
-   //+------------------------------------------------------------------+
-   //|                                                                  |
-   //+------------------------------------------------------------------+
    inline double     LastPrice(void) const
      {
       return m_price_last;
@@ -231,6 +224,11 @@ public:
          return "Closed";
 
       return "Standy-By";
+     }
+
+   inline double     TickSize() const
+     {
+      return SymbolInfoDouble(_Symbol, SYMBOL_TRADE_TICK_SIZE);
      }
 
    //+------------------------------------------------------------------+
