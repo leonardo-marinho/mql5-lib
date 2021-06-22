@@ -4,8 +4,11 @@
 //|                                             https://www.mql5.com |
 //+------------------------------------------------------------------+
 
-#include "SignalScore.mq5"
-SignalScore Context;
+#define __DEBUG
+
+#include "Strategy.mq5"
+
+Strategy Context;
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
