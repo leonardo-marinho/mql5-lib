@@ -20,7 +20,10 @@ enum ENUM_CROUND_STATE
 
 enum ENUM_CROUND_OPEN_TYPE
   {
+<<<<<<< HEAD
    CROUND_OPEN_UNKNOWN,
+=======
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
    CROUND_OPEN_SHORT,
    CROUND_OPEN_LONG
   };
@@ -28,16 +31,22 @@ enum ENUM_CROUND_OPEN_TYPE
 struct CRoundOpenParameters
   {
                      CRoundOpenParameters()
+<<<<<<< HEAD
       :              BarId(0),
                      Deviation(0),
                      Expiration(0),
                      OnePerBar(false),
                      Opened(false),
+=======
+      :              Deviation(0),
+                     Expiration(0),
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
                      Price(0),
                      Tp(0),
                      Sl(0),
                      Spread(-1),
                      Volume(1),
+<<<<<<< HEAD
                      RealProfit(false),
                      VirtualClose(false)
      {
@@ -47,13 +56,24 @@ struct CRoundOpenParameters
    datetime          Expiration;
    bool              OnePerBar;
    bool              Opened;
+=======
+                     VirtualProfit(false)
+     {
+     }
+   ulong             Deviation;
+   datetime          Expiration;
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
    double            Price;
    double            Tp;
    double            Sl;
    double            Spread;
    double            Volume;
+<<<<<<< HEAD
    bool              RealProfit;
    bool              VirtualClose;
+=======
+   bool              VirtualProfit;
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
    ENUM_CROUND_OPEN_TYPE OpenType;
   };
 
@@ -63,6 +83,7 @@ struct CRoundOpenParameters
 class CRound
   {
 protected:
+<<<<<<< HEAD
    //--- last open bar id
    int               LastOpenBarId;
    //--- last deals counter
@@ -84,6 +105,14 @@ protected:
    datetime          TimerEnd;
    //--- timer state
    bool              TimerOperating;
+=======
+   //--- start time
+   datetime          TimeStart;
+   //--- reset time
+   datetime          TimeReset;
+   //--- end time
+   datetime          TimeEnd;
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
 
    //--- state
    ENUM_CROUND_STATE State;
@@ -118,8 +147,11 @@ protected:
    bool              TickError();
    //--- tick done
    bool              TickDone();
+<<<<<<< HEAD
    //--- tick timer
    bool              TickTimer();
+=======
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
    //--- tick open checks
    bool              TickOpenCheck();
    //--- tick close checks
@@ -130,9 +162,12 @@ protected:
    //--- close
    bool              CloseAll();
 
+<<<<<<< HEAD
    //--- validate parameters routine
    virtual bool      ValidateParameters()       { return true; }
 
+=======
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
    //--- open short conditions
    virtual bool      OpenShortCondition()  { return false; }
    //--- open short conditions
@@ -146,6 +181,7 @@ protected:
 
    //--- open parameters
    virtual bool      OpenParameters(CRoundOpenParameters& parameters) { return false; }
+<<<<<<< HEAD
 
    //--- on init event
    virtual void      OnInit() { return; }
@@ -165,24 +201,45 @@ protected:
 public:
    //--- constructor
                      CRound(ENUM_TIMEFRAMES timeframe);
+=======
+     
+      //--- on init event
+   virtual void OnInit() { return; }
+   //--- on tick event
+   virtual void OnTick() { return; }
+
+public:
+   //--- constructor
+                     CRound();
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
    //--- destructor
                     ~CRound();
 
    //--- auto rearm
+<<<<<<< HEAD
    bool              AutoReInit;
 
    //--- init routine
    bool              Init();
    //--- reinit routine
    bool              ReInit();
+=======
+   bool              AutoRearm;
+
+   //--- init routine
+   bool              Init();
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
    //--- deinit routine
    bool              DeInit();
    //--- tick routine
    bool              Tick();
 
    //--- get profit
+<<<<<<< HEAD
    bool              Profit(double &profit);
    //--- get profit
+=======
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
    bool              Profit(double &profit, double &pips);
 
   };
@@ -190,6 +247,7 @@ public:
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
+<<<<<<< HEAD
 CRound::CRound(ENUM_TIMEFRAMES timeframe)
    :      TimeInit(TimeCurrent()),
           State(CROUND_STATE_INIT),
@@ -200,6 +258,14 @@ CRound::CRound(ENUM_TIMEFRAMES timeframe)
           LastOpenBarId(0),
           DealsCounterOnOpen(0),
           AutoReInit(false)
+=======
+CRound::CRound()
+   :      TimeStart(TimeCurrent()),
+          TimeReset(TimeCurrent()),
+          TimeEnd(0),
+          State(CROUND_STATE_INIT),
+          AutoRearm(false)
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
   {
   }
 //+------------------------------------------------------------------+
@@ -230,8 +296,11 @@ CRound::~CRound()
 //+------------------------------------------------------------------+
 bool CRound::DeInit()
   {
+<<<<<<< HEAD
 //--- emit event
    OnDeInit();
+=======
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
 //--- operation succeed
    return true;
   }
@@ -250,6 +319,7 @@ bool CRound::Init()
       //--- operation failed
       return false;
      }
+<<<<<<< HEAD
 //--- test parameters
    if(!ValidateParameters())
      {
@@ -314,6 +384,39 @@ bool CRound::ReInit()
    State = CROUND_STATE_TICK;
 //--- emit event
    OnReInit();
+=======
+//--- init deal info
+   if(!InitDealInfo())
+     {
+#ifdef __DEBUG Print("CRound DealInfo could not be initialized"); #endif
+      //--- operation failed
+      return false;
+     }
+//--- init position info
+   if(!InitPositionInfo())
+     {
+#ifdef __DEBUG Print("CRound PositionInfo could not be initialized"); #endif
+      //--- operation failed
+      return false;
+     }
+//--- init symbol info
+   if(!InitSymbolInfo())
+     {
+#ifdef __DEBUG Print("CRound SymbolInfo could not be initialized"); #endif
+      //--- operation failed
+      return false;
+     }
+//--- init trade
+   if(!InitTrade())
+     {
+#ifdef __DEBUG Print("CRound CTrade instance could not be initialized"); #endif
+      //--- operation failed
+      return false;
+     }
+     //--- emit event
+     OnInit();
+//--- update state
+   State = CROUND_STATE_TICK;
 //--- operation succeed
    return true;
   }
@@ -346,6 +449,54 @@ bool CRound:: InitPositionInfo()
       //--- operation failed
       return false;
      }
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
+//--- operation succeed
+   return true;
+  }
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+<<<<<<< HEAD
+bool CRound:: InitDealInfo()
+  {
+//--- set pointer
+   DealInfo = new CDealInfo;
+//--- test pointer
+   if(DealInfo == NULL)
+=======
+bool CRound::InitSymbolInfo()
+  {
+//--- set pointer
+   SymbolInfo = new CSymbolInfo;
+//--- test pointer
+   if(SymbolInfo == NULL)
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
+     {
+      //--- operation failed
+      return false;
+     }
+<<<<<<< HEAD
+//--- operation succeed
+   return true;
+  }
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+bool CRound:: InitPositionInfo()
+  {
+//--- set pointer
+   PositionInfo = new CPositionInfo;
+//--- test pointer
+   if(PositionInfo == NULL)
+=======
+//--- set symbol name
+   if(!SymbolInfo.Name(_Symbol))
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
+     {
+      //--- operation failed
+      return false;
+     }
+<<<<<<< HEAD
 //--- operation succeed
    return true;
   }
@@ -358,16 +509,26 @@ bool CRound::InitSymbolInfo()
    SymbolInfo = new CSymbolInfo;
 //--- test pointer
    if(SymbolInfo == NULL)
+=======
+//--- refresh
+   if(!SymbolInfo.Refresh())
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
      {
       //--- operation failed
       return false;
      }
+<<<<<<< HEAD
 //--- set symbol name
    if(!SymbolInfo.Name(_Symbol))
+=======
+//--- refresh rates
+   if(!SymbolInfo.RefreshRates())
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
      {
       //--- operation failed
       return false;
      }
+<<<<<<< HEAD
 //--- refresh
    if(!SymbolInfo.Refresh())
      {
@@ -418,12 +579,54 @@ bool CRound::Tick()
       //--- done routine
       TickDone();
      }
+=======
+//--- operation succeed
+   return true;
+  }
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+bool              CRound::InitTrade()
+  {
+//--- set pointer
+   Trade = new CTrade;
+//--- test pointer
+   if(Trade == NULL)
+     {
+      //--- operation failed
+      return false;
+     }
+//--- operation succeed
+   return true;
+  }
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+bool CRound::Tick()
+  {
+//--- case in error
+   if(State == CROUND_STATE_ERROR)
+     {
+      //--- error routine
+      TickError();
+     }
+
+//--- case in error
+   if(State == CROUND_STATE_DONE)
+     {
+      //--- done routine
+      TickDone();
+     }
+
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
 //--- test state
    if(State != CROUND_STATE_TICK)
      {
       //--- operation failed
       return false;
      }
+<<<<<<< HEAD
 //--- update timer state
    if(!TickTimer())
      {
@@ -436,6 +639,21 @@ bool CRound::Tick()
 //--- refresh rates
    if(!SymbolInfo.RefreshRates())
      {
+=======
+     
+     //--- emit event
+     OnTick();
+//--- refresh rates
+   if(!SymbolInfo.RefreshRates())
+     {
+      //--- operation failed
+      return false;
+     }
+//--- check open
+   if(!TickOpenCheck())
+     {
+#ifdef __DEBUG Print("CRound check open routine could not be completed"); #endif
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
       //--- operation failed
       return false;
      }
@@ -446,6 +664,7 @@ bool CRound::Tick()
       //--- operation failed
       return false;
      }
+<<<<<<< HEAD
 //--- check open
    if(!TickOpenCheck())
      {
@@ -453,6 +672,8 @@ bool CRound::Tick()
       //--- operation failed
       return false;
      }
+=======
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
 //--- operation succeed
    return true;
   }
@@ -470,9 +691,15 @@ bool CRound::TickError()
          //--- operation failed
          return false;
         }
+<<<<<<< HEAD
       //--- update state
       State = CROUND_STATE_DONE_BY_ERROR;
      }
+=======
+     }
+//--- update state
+   State = CROUND_STATE_DONE_BY_ERROR;
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
 //--- operation succeed
    return true;
   }
@@ -481,6 +708,7 @@ bool CRound::TickError()
 //+------------------------------------------------------------------+
 bool CRound::TickDone()
   {
+<<<<<<< HEAD
 //--- emit event
    OnDone();
 //--- var to store profit
@@ -509,6 +737,13 @@ bool CRound::TickDone()
          //--- operation failed
          State = CROUND_STATE_ERROR;
         }
+=======
+//--- if may auto rearm
+   if(AutoRearm)
+     {
+      //--- update state
+      State = CROUND_STATE_TICK;
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
      }
 //--- operation succeed
    return true;
@@ -516,6 +751,7 @@ bool CRound::TickDone()
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
+<<<<<<< HEAD
 bool CRound::TickTimer()
   {
 //--- store current time
@@ -557,6 +793,33 @@ bool CRound::TickOpenCheck()
                //--- operation failed
                return false;
               }
+=======
+bool CRound::TickOpenCheck()
+  {
+//--- check if there is any position open
+   if(PositionsTotal() == 0)
+     {
+      //--- test open short condition
+      if(OpenShortCondition())
+        {
+         //--- open short
+         if(!Open(CROUND_OPEN_SHORT))
+           {
+#ifdef __DEBUG Print("CRound open short could not be executed"); #endif
+            //--- operation failed
+            return false;
+           }
+        }
+      //--- test open short condition
+      if(OpenLongCondition())
+        {
+         //--- open short
+         if(!Open(CROUND_OPEN_LONG))
+           {
+#ifdef __DEBUG Print("CRound open long could not be executed"); #endif
+            //--- operation failed
+            return false;
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
            }
         }
      }
@@ -569,6 +832,7 @@ bool CRound::TickOpenCheck()
 //+------------------------------------------------------------------+
 bool CRound::TickCloseCheck()
   {
+<<<<<<< HEAD
    if(PositionsTotal() != 0 && !TimerOperating)
      {
       //--- close all
@@ -626,8 +890,96 @@ bool CRound::TickCloseCheck()
                //--- operation failed
                return false;
               }
+=======
+//--- check if there is any position open
+   if(PositionsTotal() != 0)
+     {
+      //--- var to store profit value
+      double profitValue = 0;
+      //--- var to store profit pips
+      double profitPips = 0;
+      //--- get profit
+      if(!Profit(profitValue, profitPips))
+        {
+         //--- operation failed
+         return false;
+        }
+      //--- test open short condition
+      if(CloseShortCondition(profitValue, profitPips, LastOrderParameters.Tp, LastOrderParameters.Sl, SpreadPips()))
+        {
+         //--- open all
+         if(!CloseAll())
+           {
+#ifdef __DEBUG Print("CRound close short could not be executed"); #endif
+            //--- operation failed
+            return false;
            }
         }
+      //--- test open short condition
+      if(CloseLongCondition(profitValue, profitPips, LastOrderParameters.Tp, LastOrderParameters.Sl, SpreadPips()))
+        {
+         //--- open all
+         if(!CloseAll())
+           {
+#ifdef __DEBUG Print("CRound close long could not be executed"); #endif
+            //--- operation failed
+            return false;
+           }
+        }
+      //--- test general condition
+      if(CloseCondition(profitValue, profitPips, LastOrderParameters.Tp, LastOrderParameters.Sl, SpreadPips()))
+        {
+         //--- close all
+         if(!CloseAll())
+           {
+#ifdef __DEBUG Print("CRound close position could not be executed"); #endif
+            //--- operation failed
+            return false;
+           }
+        }
+     }
+//--- operation succeed
+   return true;
+  }
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+bool CRound::Profit(double &profit, double &pips)
+  {
+//--- select position
+   if(!PositionInfo.Select(SymbolInfo.Name()))
+     {
+#ifdef __DEBUG Print("CRound could not fetch position profit"); #endif
+      //--- update state
+      State = CROUND_STATE_ERROR;
+      //--- operation failed
+      return false;
+     }
+//--- check state
+   if(State == CROUND_STATE_TICK)
+     {
+      profit = PositionInfo.Profit();
+     }
+   else
+      if(State == CROUND_STATE_DONE)
+        {
+         //--- update history
+         HistorySelect(TimeReset, TimeCurrent());
+         //--- select deal
+         if(!DealInfo.SelectByIndex(HistoryDealsTotal() - 2))
+           {
+#ifdef __DEBUG Print("CRound could not fetch deal profit"); #endif
+            //--- update state
+            State = CROUND_STATE_ERROR;
+            //--- operation failed
+            return false;
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
+           }
+         //--- move profit
+         profit = DealInfo.Profit();
+        }
+<<<<<<< HEAD
       //--- update deals history
       HistorySelect(TimeReInit, TimeCurrent());
       //--- check if there is any position open and is not virtual profit
@@ -648,6 +1000,10 @@ bool CRound::TickCloseCheck()
          TickDone();
         }
      }
+=======
+//--- move pips
+   pips = profit / SymbolInfo.TickValue() / (LastOrderParameters.Volume == 0 ? 1 : LastOrderParameters.Volume);
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
 //--- operation succeed
    return true;
   }
@@ -655,6 +1011,7 @@ bool CRound::TickCloseCheck()
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
+<<<<<<< HEAD
 bool CRound::Profit(double &profit)
   {
 //--- dump var for pips arg
@@ -734,10 +1091,25 @@ bool CRound::Open(ENUM_CROUND_OPEN_TYPE type)
    CRoundOpenParameters parameters;
 //--- move parameters
    if(!OpenParameters(parameters))
+=======
+bool CRound::Open(ENUM_CROUND_OPEN_TYPE type)
+  {
+//--- open parameters var
+   CRoundOpenParameters parameters;
+//--- move parameters
+   if(!OpenParameters(parameters))
      {
       //--- operation failed
       return false;
      }
+//--- check spread
+   if(parameters.Spread != -1 && SpreadPips() > parameters.Spread)
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
+     {
+      //--- operation failed
+      return false;
+     }
+<<<<<<< HEAD
 //--- check if any is open
    if(LastOrderParameters.Opened)
      {
@@ -815,6 +1187,52 @@ bool CRound::Open(ENUM_CROUND_OPEN_TYPE type)
    LastOpenBarId = parameters.BarId;
 //--- set opened flag
    parameters.Opened = true;
+=======
+//--- set deviation
+   Trade.SetDeviationInPoints(parameters.Deviation);
+//--- check if price was passed
+   if(parameters.Price == 0)
+     {
+      //--- resolve price
+      parameters.Price = type == CROUND_OPEN_SHORT ? SymbolInfo.Bid() : SymbolInfo.Ask();
+     }
+//--- check if must be placed with a price
+   if(parameters.Expiration != 0)
+     {
+      //--- try place order
+      if(!Trade.OrderOpen(SymbolInfo.Name(), type == CROUND_OPEN_SHORT ? ORDER_TYPE_SELL_LIMIT : ORDER_TYPE_BUY_LIMIT,
+                          parameters.Volume, 0, parameters.Price,
+                          parameters.VirtualProfit ? 0 : parameters.Price + (parameters.Sl * SymbolInfo.TickSize() * (type == CROUND_OPEN_SHORT ? 1 : -1)),
+                          parameters.VirtualProfit ? 0 : parameters.Price + (parameters.Tp * SymbolInfo.TickSize() * (type == CROUND_OPEN_SHORT ? -1 : 1)),
+                          ORDER_TIME_SPECIFIED, TimeCurrent() + parameters.Expiration))
+        {
+         //--- operation failed
+         return false;
+        }
+      //--- echo
+      Print("Order placed at ", SymbolInfo.Name(), " with price ", parameters.Price);
+     }
+//--- else will be placed by market
+   else
+     {
+      if(!Trade.PositionOpen(SymbolInfo.Name(), type == CROUND_OPEN_SHORT ? ORDER_TYPE_SELL : ORDER_TYPE_BUY,
+                             parameters.Volume, parameters.Price,
+                             parameters.VirtualProfit ? 0 : parameters.Price + (parameters.Sl * SymbolInfo.TickSize() * (type == CROUND_OPEN_SHORT ? 1 : -1)),
+                             parameters.VirtualProfit ? 0 : parameters.Price + (parameters.Tp * SymbolInfo.TickSize() * (type == CROUND_OPEN_SHORT ? -1 : 1))))
+        {
+         //--- operation failed
+         return false;
+        }
+      //--- echo
+      Print("Position opened at ", SymbolInfo.Name(), " with market price");
+     }
+//--- test retcode
+   if(Trade.ResultRetcode() != TRADE_RETCODE_DONE)
+     {
+      //--- operation failed
+      return false;
+     }
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
 //--- insert open paramenters to buffer
    LastOrderParameters = parameters;
 //--- store open type
@@ -844,6 +1262,17 @@ bool CRound::CloseAll()
 //--- operation succeed
    return true;
   }
+<<<<<<< HEAD
+=======
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+bool      CRound::CloseCondition(const double profitValue, const double profitPips, const double tp, const double sl, const double spread)
+  {
+   return false;
+  }
+>>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
 
 //+------------------------------------------------------------------+
 //|                                                                  |
