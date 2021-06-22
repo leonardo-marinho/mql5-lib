@@ -7,10 +7,7 @@
 #define __DEBUG
 
 #include "Strategy.mq5"
-<<<<<<< HEAD
 
-=======
->>>>>>> 3dbfd18f575d988d2618b8a8f59ff871bacc263d
 Strategy Context;
 
 //+------------------------------------------------------------------+
