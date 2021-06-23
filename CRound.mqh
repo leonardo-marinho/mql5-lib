@@ -775,29 +775,29 @@ bool CRound::Open(ENUM_CROUND_OPEN_TYPE type)
       //--- try place order
       if(!Trade.OrderOpen(SymbolInfo.Name(), type == CROUND_OPEN_SHORT ? ORDER_TYPE_SELL_LIMIT : ORDER_TYPE_BUY_LIMIT,
                           parameters.Volume, 0, parameters.Price,
-                          parameters.VirtualClose ? 0 : parameters.Price + (MathAbs(parameters.Sl) * SymbolInfo.TickSize() * (type == CROUND_OPEN_SHORT ? 1 : -1)),
-                          parameters.VirtualClose ? 0 : parameters.Price + (MathAbs(parameters.Tp) * SymbolInfo.TickSize() * (type == CROUND_OPEN_SHORT ? -1 : 1)),
+                          parameters.VirtualClose || parameters.Sl == 0 ? 0 : parameters.Price + (MathAbs(parameters.Sl) * SymbolInfo.TickSize() * (type == CROUND_OPEN_SHORT ? 1 : -1)),
+                          parameters.VirtualClose || parameters.Tp == 0 ? 0 : parameters.Price + (MathAbs(parameters.Tp) * SymbolInfo.TickSize() * (type == CROUND_OPEN_SHORT ? -1 : 1)),
                           ORDER_TIME_SPECIFIED, TimeCurrent() + parameters.Expiration))
         {
          //--- operation failed
          return false;
         }
       //--- echo
-      Print("Order placed at ", SymbolInfo.Name(), " with price ", parameters.Price);
+      #ifdef __DEBUG Print("Order placed at ", SymbolInfo.Name(), " with price ", parameters.Price); #endif
      }
 //--- else will be placed by market
    else
      {
       if(!Trade.PositionOpen(SymbolInfo.Name(), type == CROUND_OPEN_SHORT ? ORDER_TYPE_SELL : ORDER_TYPE_BUY,
                              parameters.Volume, parameters.Price,
-                             parameters.VirtualClose ? 0 : parameters.Price + (MathAbs(parameters.Sl) * SymbolInfo.TickSize() * (type == CROUND_OPEN_SHORT ? 1 : -1)),
-                             parameters.VirtualClose ? 0 : parameters.Price + (MathAbs(parameters.Tp) * SymbolInfo.TickSize() * (type == CROUND_OPEN_SHORT ? -1 : 1))))
+                             parameters.VirtualClose || parameters.Sl == 0 ? 0 : parameters.Price + (MathAbs(parameters.Sl) * SymbolInfo.TickSize() * (type == CROUND_OPEN_SHORT ? 1 : -1)),
+                             parameters.VirtualClose || parameters.Tp == 0 ? 0 : parameters.Price + (MathAbs(parameters.Tp) * SymbolInfo.TickSize() * (type == CROUND_OPEN_SHORT ? -1 : 1))))
         {
          //--- operation failed
          return false;
         }
       //--- echo
-      Print("Position opened at ", SymbolInfo.Name(), " with market price");
+      #ifdef __DEBUG Print("Position opened at ", SymbolInfo.Name(), " with market price"); #endif
      }
 //--- test retcode
    if(Trade.ResultRetcode() != TRADE_RETCODE_DONE)
