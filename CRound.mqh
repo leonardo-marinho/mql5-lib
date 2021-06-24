@@ -25,6 +25,13 @@ enum ENUM_CROUND_OPEN_TYPE
    CROUND_OPEN_LONG
   };
 
+enum ENUM_CROUND_TIMER_STATE
+  {
+   CROUND_TIMER_OPERATING,
+   CROUND_TIMER_COOLDOW,
+   CROUND_TIMER_NO_OPERATION
+  };
+
 struct CRoundOpenParameters
   {
                      CRoundOpenParameters()
@@ -81,9 +88,13 @@ protected:
    //--- timer start
    datetime          TimerStart;
    //--- timer duration
+   datetime          TimerCooldown;
+   //--- timer duration
    datetime          TimerEnd;
    //--- timer state
-   bool              TimerOperating;
+   ENUM_CROUND_TIMER_STATE TimerOperating;
+   //--- timer reinit
+   bool              TimerReInitDone;
 
    //--- state
    ENUM_CROUND_STATE State;
@@ -101,9 +112,12 @@ protected:
    CTrade*           Trade;
 
    //--- get spread
-   inline double     Spread() { return SymbolInfo.Ask() - SymbolInfo.Bid(); }
+   double            Spread() { return SymbolInfo.Ask() - SymbolInfo.Bid(); }
    //--- get spread pips
-   inline double     SpreadPips() { return Spread() / SymbolInfo.TickSize(); }
+   double            SpreadPips() { return Spread() / SymbolInfo.TickSize(); }
+
+   //--- try reinit routine
+   bool              TryReInit();
 
    //--- init deal
    bool              InitDealInfo();
@@ -195,8 +209,9 @@ CRound::CRound(ENUM_TIMEFRAMES timeframe)
           State(CROUND_STATE_INIT),
           Timeframe(timeframe),
           TimerStart(0),
+          TimerCooldown(86400),
           TimerEnd(86400),
-          TimerOperating(false),
+          TimerReInitDone(true),
           LastOpenBarId(0),
           DealsCounterOnOpen(0),
           AutoReInit(false)
@@ -223,6 +238,25 @@ CRound::~CRound()
    delete Trade;
 //--- reset mem value
    Trade = NULL;
+  }
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+bool CRound::TryReInit()
+  {
+//--- reinit
+   if(AutoReInit)
+     {
+      //--- reinit
+      if(!ReInit())
+        {
+         //--- operation failed
+         return false;
+        }
+     }
+//--- operation succeed
+   return true;
   }
 
 //+------------------------------------------------------------------+
@@ -499,16 +533,12 @@ bool CRound::TickDone()
          ///--- emit event
          OnLoss();
         }
-//--- if may auto rearm
-   if(AutoReInit)
+//--- try reinit
+   if(!TryReInit())
      {
-      //--- reinit
-      if(!ReInit())
-        {
-#ifdef __DEBUG Print("CRound Reinit could not be executed"); #endif
-         //--- operation failed
-         State = CROUND_STATE_ERROR;
-        }
+#ifdef __DEBUG Print("CRound try Reinit could not be executed"); #endif
+      //--- operation failed
+      State = CROUND_STATE_ERROR;
      }
 //--- operation succeed
    return true;
@@ -520,8 +550,37 @@ bool CRound::TickTimer()
   {
 //--- store current time
    datetime currentTimeSeconds = TimeCurrent() % 86400;
-//--- set timer as started
-   TimerOperating = currentTimeSeconds >= TimerStart && currentTimeSeconds < TimerEnd;
+//--- set as operating
+   TimerOperating = CROUND_TIMER_NO_OPERATION;
+//--- set timer operating or not
+   if(currentTimeSeconds >= TimerStart && currentTimeSeconds < TimerEnd)
+     {
+      //--- set as operating
+      TimerOperating = CROUND_TIMER_OPERATING;
+      //--- set timer reinit flag
+      TimerReInitDone = false;
+      //--- check for cooldown
+      if(currentTimeSeconds >= TimerCooldown && currentTimeSeconds < TimerEnd &&
+         TimerCooldown > TimerStart && TimerCooldown < TimerEnd)
+        {
+         TimerOperating = CROUND_TIMER_COOLDOW;
+        }
+     }
+   else
+      if(!TimerReInitDone)
+        {
+         //--- try reinit
+         if(!TryReInit())
+           {
+#ifdef __DEBUG Print("CRound try Reinit could not be executed"); #endif
+            //--- operation failed
+            State = CROUND_STATE_ERROR;
+            //--- operation failed
+            return false;
+           }
+         //--- reset flag
+         TimerReInitDone = true;
+        }
 //--- operation succeed
    return true;
   }
@@ -531,7 +590,7 @@ bool CRound::TickTimer()
 bool CRound::TickOpenCheck()
   {
 //--- check if timer is ok
-   if(TimerOperating)
+   if(TimerOperating == CROUND_TIMER_OPERATING)
      {
       //--- check if there is any position open
       if(PositionsTotal() == 0)
@@ -569,83 +628,92 @@ bool CRound::TickOpenCheck()
 //+------------------------------------------------------------------+
 bool CRound::TickCloseCheck()
   {
-   if(PositionsTotal() != 0 && !TimerOperating)
+   if(PositionsTotal() != 0)
      {
-      //--- close all
-      if(!CloseAll())
+      if(TimerOperating == CROUND_TIMER_NO_OPERATION)
         {
-#ifdef __DEBUG Print("CRound close position could not be executed"); #endif
-         //--- operation failed
-         return false;
-        }
-     }
-//--- check if there is any position open
-   if(LastOrderParameters.Opened)
-     {
-      if(LastOrderParameters.VirtualClose && PositionsTotal() != 0)
-        {
-         //--- var to store profit value
-         double profitValue = 0;
-         //--- var to store profit pips
-         double profitPips = 0;
-         //--- get profit
-         if(!Profit(profitValue, profitPips))
+         //--- close all
+         if(!CloseAll())
            {
+#ifdef __DEBUG Print("CRound close position could not be executed"); #endif
             //--- operation failed
             return false;
            }
-         //--- test open short condition
-         if(CloseShortCondition(profitValue, profitPips, LastOrderParameters.Tp, LastOrderParameters.Sl, SpreadPips()))
+        }
+      //--- check if there is any position open
+      if(LastOrderParameters.Opened)
+        {
+         if(LastOrderParameters.VirtualClose)
            {
-            //--- open all
-            if(!CloseAll())
+            //--- var to store profit value
+            double profitValue = 0;
+            //--- var to store profit pips
+            double profitPips = 0;
+            //--- get profit
+            if(!Profit(profitValue, profitPips))
               {
+               //--- operation failed
+               return false;
+              }
+            //--- test open short condition
+            if(CloseShortCondition(profitValue, profitPips, LastOrderParameters.Tp, LastOrderParameters.Sl, SpreadPips()))
+              {
+               //--- open all
+               if(!CloseAll())
+                 {
 #ifdef __DEBUG Print("CRound close short could not be executed"); #endif
-               //--- operation failed
-               return false;
+                  //--- operation failed
+                  return false;
+                 }
               }
-           }
-         //--- test open short condition
-         if(CloseLongCondition(profitValue, profitPips, LastOrderParameters.Tp, LastOrderParameters.Sl, SpreadPips()))
-           {
-            //--- open all
-            if(!CloseAll())
+            //--- test open short condition
+            if(CloseLongCondition(profitValue, profitPips, LastOrderParameters.Tp, LastOrderParameters.Sl, SpreadPips()))
               {
+               //--- open all
+               if(!CloseAll())
+                 {
 #ifdef __DEBUG Print("CRound close long could not be executed"); #endif
-               //--- operation failed
-               return false;
+                  //--- operation failed
+                  return false;
+                 }
               }
-           }
-         //--- test general condition
-         if(CloseCondition(profitValue, profitPips, LastOrderParameters.Tp, LastOrderParameters.Sl, SpreadPips()) || !TimerOperating)
-           {
-            //--- close all
-            if(!CloseAll())
+            //--- test general condition
+            if(CloseCondition(profitValue, profitPips, LastOrderParameters.Tp, LastOrderParameters.Sl, SpreadPips()) || TimerOperating == CROUND_TIMER_NO_OPERATION)
               {
+               //--- close all
+               if(!CloseAll())
+                 {
 #ifdef __DEBUG Print("CRound close position could not be executed"); #endif
-               //--- operation failed
-               return false;
+                  //--- operation failed
+                  return false;
+                 }
               }
            }
-        }
-      //--- update deals history
-      HistorySelect(TimeReInit, TimeCurrent());
-      //--- check if there is any position open and is not virtual profit
-      if(!LastOrderParameters.VirtualClose)
-        {
-
-         //--- set deals counter
-         if(HistoryDealsTotal() > DealsCounterOnOpen)
+         //--- update deals history
+         HistorySelect(TimeReInit, TimeCurrent());
+         //--- check if there is any position open and is not virtual profit
+         if(!LastOrderParameters.VirtualClose)
            {
-            //--- set state as done
-            State = CROUND_STATE_DONE;
+
+            //--- set deals counter
+            if(HistoryDealsTotal() > DealsCounterOnOpen)
+              {
+               //--- set state as done
+               State = CROUND_STATE_DONE;
+              }
+           }
+         //--- case in done
+         if(State == CROUND_STATE_DONE)
+           {
+            //--- done routine
+            TickDone();
            }
         }
-      //--- case in done
-      if(State == CROUND_STATE_DONE)
+      //--- has positions open but not open flag is checked
+      else
         {
-         //--- done routine
-         TickDone();
+         //--- set state error
+         State = CROUND_STATE_ERROR;
         }
      }
 //--- operation succeed
@@ -783,7 +851,7 @@ bool CRound::Open(ENUM_CROUND_OPEN_TYPE type)
          return false;
         }
       //--- echo
-      #ifdef __DEBUG Print("Order placed at ", SymbolInfo.Name(), " with price ", parameters.Price); #endif
+#ifdef __DEBUG Print("Order placed at ", SymbolInfo.Name(), " with price ", parameters.Price); #endif
      }
 //--- else will be placed by market
    else
@@ -797,7 +865,7 @@ bool CRound::Open(ENUM_CROUND_OPEN_TYPE type)
          return false;
         }
       //--- echo
-      #ifdef __DEBUG Print("Position opened at ", SymbolInfo.Name(), " with market price"); #endif
+#ifdef __DEBUG Print("Position opened at ", SymbolInfo.Name(), " with market price"); #endif
      }
 //--- test retcode
    if(Trade.ResultRetcode() != TRADE_RETCODE_DONE)
