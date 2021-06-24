@@ -149,13 +149,13 @@ protected:
 
    //--- open short conditions
    virtual bool      OpenShortCondition()  { return false; }
-   //--- open short conditions
+   //--- open long conditions
    virtual bool      OpenLongCondition()   { return false; }
    //--- close conditions
    virtual bool      CloseCondition(const double profitValue, const double profitPips, const double tp, const double sl, const double spread);
    //--- close short conditions
    virtual bool      CloseShortCondition(const double profitValue, const double profitPips, const double tp, const double sl, const double spread) { return false; }
-   //--- open short conditions
+   //--- open long conditions
    virtual bool      CloseLongCondition(const double profitValue, const double profitPips, const double tp, const double sl, const double spread)  { return false; }
 
    //--- open parameters
