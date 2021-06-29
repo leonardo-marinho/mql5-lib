@@ -152,11 +152,11 @@ protected:
    //--- open long conditions
    virtual bool      OpenLongCondition()   { return false; }
    //--- close conditions
-   virtual bool      CloseCondition(const double profitValue, const double profitPips, const double tp, const double sl, const double spread);
+   virtual bool      CloseCondition(const int barId, const double profitValue, const double profitPips, const double tp, const double sl, const double spread);
    //--- close short conditions
-   virtual bool      CloseShortCondition(const double profitValue, const double profitPips, const double tp, const double sl, const double spread) { return false; }
+   virtual bool      CloseShortCondition(const int barId, const double profitValue, const double profitPips, const double tp, const double sl, const double spread) { return false; }
    //--- open long conditions
-   virtual bool      CloseLongCondition(const double profitValue, const double profitPips, const double tp, const double sl, const double spread)  { return false; }
+   virtual bool      CloseLongCondition(const int barId, const double profitValue, const double profitPips, const double tp, const double sl, const double spread)  { return false; }
 
    //--- open parameters
    virtual bool      OpenParameters(CRoundOpenParameters& parameters) { return false; }
@@ -656,7 +656,7 @@ bool CRound::TickCloseCheck()
                return false;
               }
             //--- test open short condition
-            if(CloseShortCondition(profitValue, profitPips, LastOrderParameters.Tp, LastOrderParameters.Sl, SpreadPips()))
+            if(LastOrderParameters.OpenType == CROUND_OPEN_SHORT && CloseShortCondition(LastOrderParameters.BarId, profitValue, profitPips, LastOrderParameters.Tp, LastOrderParameters.Sl, SpreadPips()))
               {
                //--- open all
                if(!CloseAll())
@@ -667,7 +667,7 @@ bool CRound::TickCloseCheck()
                  }
               }
             //--- test open short condition
-            if(CloseLongCondition(profitValue, profitPips, LastOrderParameters.Tp, LastOrderParameters.Sl, SpreadPips()))
+            if(LastOrderParameters.OpenType == CROUND_OPEN_LONG && CloseLongCondition(LastOrderParameters.BarId, profitValue, profitPips, LastOrderParameters.Tp, LastOrderParameters.Sl, SpreadPips()))
               {
                //--- open all
                if(!CloseAll())
@@ -678,7 +678,7 @@ bool CRound::TickCloseCheck()
                  }
               }
             //--- test general condition
-            if(CloseCondition(profitValue, profitPips, LastOrderParameters.Tp, LastOrderParameters.Sl, SpreadPips()) || TimerOperating == CROUND_TIMER_NO_OPERATION)
+            if(CloseCondition(LastOrderParameters.BarId, profitValue, profitPips, LastOrderParameters.Tp, LastOrderParameters.Sl, SpreadPips()) || TimerOperating == CROUND_TIMER_NO_OPERATION)
               {
                //--- close all
                if(!CloseAll())
@@ -916,7 +916,7 @@ bool CRound::CloseAll()
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-bool      CRound::CloseCondition(const double profitValue, const double profitPips, const double tp, const double sl, const double spread)
+bool      CRound::CloseCondition(const int barId, const double profitValue, const double profitPips, const double tp, const double sl, const double spread)
   {
    return profitPips >= tp || profitPips <= sl;
   }
