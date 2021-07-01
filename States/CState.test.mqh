@@ -4,7 +4,7 @@
 //|                          https://github.com/dev-marinho/mql5-lib |
 //+------------------------------------------------------------------+
 
-#include <mql5-lib\UnitTest\CUnitTest.mqh>
+#include <mql5-lib\CUnitTest.mqh>
 #include <mql5-lib\States\CState.mqh>
 
 //+------------------------------------------------------------------+
