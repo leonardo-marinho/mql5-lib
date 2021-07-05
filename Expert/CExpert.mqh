@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Leonardo Marinho"
 #property link      "https://github.com/dev-marinho/mql5-lib"
-#property version   "1.0"
+#property version   "0.14"
 
 #ifndef __C_EXPERT
 #define __C_EXPERT
@@ -183,8 +183,12 @@ protected:
    virtual void      OnTick(void)   { return; }
    //--- Event called on InitIndicators method
    virtual void      OnError(void)   { return; }
+   //--- Event called on CheckOpenCondition method
+   virtual void      OnCheckOpenCondition(void) { return;}
    //--- Event called on Open method
    virtual void      OnOpen(void)   { return; }
+   //--- Event called on CheckCloseCondition method
+   virtual void      OnCheckCloseCondition(void) { return;}
    //--- Event called on Close method
    virtual void      OnClose(void)  { return; }
    //--- Event called ater Close method if profit is lower than 0
@@ -546,6 +550,8 @@ bool              CExpert::CheckOpenCondition()
       return true;
      }
 //}
+//--- emit event
+   OnCheckOpenCondition();
 //--- test conditions
    if(OpenShortCondition())
      {
@@ -576,6 +582,8 @@ bool              CExpert::CheckCloseCondition()
       double profitPips;
       //--- get profit
       Profit(profitValue, profitPips);
+      //--- emit event
+      OnCheckCloseCondition();
       //--- test conditionals
       if(CloseShortCondition(profitValue, profitPips) ||
          CloseLongCondition(profitValue, profitPips) ||
@@ -634,6 +642,13 @@ bool              CExpert::Init()
    if(!InitOpenParametersArray())
      {
 #ifdef __DEBUG_ Print("Failed to initialize open parameters array"); #endif
+      //--- operation failed
+      return false;
+     }
+//--- initializes indicators
+   if(!InitIndicators())
+     {
+#ifdef __DEBUG_ Print("Failed to initialize indicators"); #endif
       //--- operation failed
       return false;
      }
