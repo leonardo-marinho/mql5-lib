@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Leonardo Marinho"
 #property link      "https://github.com/dev-marinho/mql5-lib"
-#property version   "0.14"
+#property version   "0.15"
 
 #ifndef __C_EXPERT
 #define __C_EXPERT
@@ -110,12 +110,24 @@ private:
       STATE_ERROR
      };
 
+   //--- tick mode
+   enum M_TICK_MODES
+     {
+      MODE_EVERYTICK,
+      MODE_NEWBAR
+     };
+
    //--- Operating symbol name
    const string            m_symbolName;
    //--- Operating timeseries
    const ENUM_TIMEFRAMES   m_timeframe;
    //--- Magic number
    const ulong             m_magicNumber;
+   //--- Tick behavior
+   const M_TICK_MODES      m_tick_mode;
+
+   //--- Prev bar id
+   int                     m_prevBarId;
 
    //--- init time
    datetime          m_timeInit;
@@ -195,6 +207,8 @@ protected:
    virtual void      OnProfit(void) { return; }
    //--- Event called ater Close method if profit is higher than 0
    virtual void      OnLoss(void)   { return; }
+   //--- Event called when a new bar is detected
+   virtual void      OnNewBar(void) { return; }
 
    //--- Conditions to open a long position
    virtual bool      OpenShortCondition(void)  { return false; }
@@ -211,7 +225,7 @@ protected:
 
 public:
    //--- Constructor
-                     CExpert(string, ENUM_TIMEFRAMES, ulong);
+                     CExpert(string, ENUM_TIMEFRAMES, ulong, M_TICK_MODES);
    //--- Destructor
                     ~CExpert();
 
@@ -226,11 +240,13 @@ public:
 //+------------------------------------------------------------------+
 //| Constructor                                                      |
 //+------------------------------------------------------------------+
-CExpert::CExpert(string t_symbolName,ENUM_TIMEFRAMES t_timeframe,ulong t_magicNumber)
+CExpert::CExpert(string t_symbolName,ENUM_TIMEFRAMES t_timeframe,ulong t_magicNumber, M_TICK_MODES t_tick_mode = MODE_EVERYTICK)
    : m_symbolName(t_symbolName),
      m_timeframe(t_timeframe),
      m_magicNumber(t_magicNumber),
-     m_timeInit(TimeCurrent())
+     m_tick_mode(t_tick_mode),
+     m_timeInit(TimeCurrent()),
+     m_prevBarId(0)
   {
   }
 //+------------------------------------------------------------------+
@@ -671,7 +687,7 @@ bool              CExpert::DeInit()
   }
 
 //+------------------------------------------------------------------+
-//|                                                                  |
+//| Class instance tick method                                       |
 //+------------------------------------------------------------------+
 void              CExpert::Tick()
   {
@@ -693,7 +709,27 @@ void              CExpert::Tick()
    if(m_stateHolder.state() == STATE_RUNNING)
      {
       //--- try conditions
-      if(!CheckCloseCondition() || !CheckOpenCondition())
+      if(!CheckCloseCondition())
+        {
+         //--- set state
+         m_stateHolder.state(STATE_ERROR);
+        }
+      //--- detect new bar
+      if(m_prevBarId != iBars(SymbolInfo.Name(), Timeframe()))
+        {
+         //--- update prev bar id
+         m_prevBarId = iBars(SymbolInfo.Name(), Timeframe());
+         //--- emit event
+         OnNewBar();
+        }
+      else
+         //--- test if tick mode is new bar
+         if(m_tick_mode == MODE_NEWBAR)
+           {
+            //--- exit
+            return;
+           }
+      if(!CheckOpenCondition())
         {
          //--- set state
          m_stateHolder.state(STATE_ERROR);
