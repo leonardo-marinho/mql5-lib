@@ -36,6 +36,7 @@ The CExpert class is a set of virtual methods for implementation of trading stra
 | OnCheckCloseCondition| Event called on CheckCloseCondition method |
 | OnLoss | Event called ater Close method if profit is lower than 0 |
 | OnProfit | Event called ater Close method if profit is higher than 0 |
+| OnNewBar | Event called when a new bar is detected |
 ### Market
 | Method | Description |
 |--|--|
@@ -48,3 +49,16 @@ The CExpert class is a set of virtual methods for implementation of trading stra
 | Method | Description |
 |--|--|
 | virtual OpenParameters | Set parameters to a new position |
+
+## Enums / Consts
+### M_STATES
+| Property|
+|--|
+| STATE_RUNNING |
+| STATE_OUT |
+| STATE_ERROR |
+### M_TICK_MODES
+| Property|
+|--|
+| MODE_EVERYTICK |
+| MODE_ NEWBAR |
