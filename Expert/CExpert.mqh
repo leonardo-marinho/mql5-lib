@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Leonardo Marinho"
 #property link      "https://github.com/dev-marinho/mql5-lib"
-#property version   "0.15"
+#property version   "0.16"
 
 #ifndef __C_EXPERT
 #define __C_EXPERT
@@ -143,8 +143,6 @@ private:
    //--- Open parameters history
    CArrayObj*        m_openParametersArray;
 
-   COpenParameters   dump;
-
    //--- Return if any position is open
    bool              AnyPositionOpen();
    //--- Return profit of open positions
@@ -179,6 +177,8 @@ protected:
 
    //--- Timeframe of the expert
    ENUM_TIMEFRAMES   Timeframe(void) { return m_timeframe; }
+   
+   COpenParameters   dump;
 
    //--- Initializes indicators
    virtual bool      InitIndicators() { return true; }
@@ -601,8 +601,8 @@ bool              CExpert::CheckCloseCondition()
       //--- emit event
       OnCheckCloseCondition();
       //--- test conditionals
-      if(CloseShortCondition(profitValue, profitPips) ||
-         CloseLongCondition(profitValue, profitPips) ||
+      if((dump.PositionType() == POSITION_TYPE_SELL && CloseShortCondition(profitValue, profitPips)) ||
+         (dump.PositionType() == POSITION_TYPE_BUY && CloseLongCondition(profitValue, profitPips)) ||
          CloseCondition(profitValue, profitPips))
         {
 #ifdef __DEBUG_ Print("Close condition met"); #endif
