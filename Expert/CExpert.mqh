@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Leonardo Marinho"
 #property link      "https://github.com/dev-marinho/mql5-lib"
-#property version   "0.16"
+#property version   "0.17"
 
 #ifndef __C_EXPERT
 #define __C_EXPERT
@@ -177,13 +177,17 @@ protected:
 
    //--- Timeframe of the expert
    ENUM_TIMEFRAMES   Timeframe(void) { return m_timeframe; }
-   
+
    COpenParameters   dump;
 
    //--- Initializes indicators
    virtual bool      InitIndicators() { return true; }
+   //--- Initializes vars
+   virtual bool      InitVars() { return true; }
    //--- DeInitializes indicators
    virtual bool      DeInitIndicators() { return true; }
+   //--- DeInitializes vars
+   virtual bool      DeInitVars() { return true; }
    //--- Checks the settings
    virtual bool      ValidateSettings() { return true; }
 
@@ -661,6 +665,13 @@ bool              CExpert::Init()
       //--- operation failed
       return false;
      }
+//--- initializes vars
+   if(!InitVars())
+     {
+#ifdef __DEBUG_ Print("Failed to initialize vars"); #endif
+      //--- operation failed
+      return false;
+     }
 //--- initializes indicators
    if(!InitIndicators())
      {
@@ -680,6 +691,20 @@ bool              CExpert::Init()
 //+------------------------------------------------------------------+
 bool              CExpert::DeInit()
   {
+//--- deinitializes indicators
+   if(!DeInitIndicators())
+     {
+#ifdef __DEBUG_ Print("Failed to deinitialize indicators"); #endif
+      //--- operation failed
+      return false;
+     }
+//--- initializes vars
+   if(!DeInitVars())
+     {
+#ifdef __DEBUG_ Print("Failed to deinitialize vars"); #endif
+      //--- operation failed
+      return false;
+     }
 //--- emit event
    OnDeInit();
 //--- deinitialization succeed
