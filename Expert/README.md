@@ -15,8 +15,10 @@ The CExpert class is a set of virtual methods for implementation of trading stra
 |--|--|
 | Init | Class instance initialization method |
 | virtual InitIndicators | Initializes indicators |
+| virtual InitVars | Initializes vars |
 | DeInit | Class instance deinitialization method |
 | virtual DeInitIndicators | DeInitializes indicators |
+| virtual DeInitVars | DeInitializes vars |
 | Tick | Class instance tick method |
 | virtual ValidateSettings | Checks the settings |
 ### Parameters
