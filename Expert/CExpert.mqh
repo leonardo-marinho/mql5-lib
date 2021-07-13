@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Leonardo Marinho"
 #property link      "https://github.com/dev-marinho/mql5-lib"
-#property version   "0.17"
+#property version   "0.18"
 
 #ifndef __C_EXPERT
 #define __C_EXPERT
@@ -544,6 +544,19 @@ bool              CExpert::Close(void)
      }
 //--- emit event
    OnClose();
+//--- var to store profit
+   double profitValue, profitPips;
+//--- get profit
+   Profit(profitValue, profitPips);
+//--- on profit
+   if(profitValue > 0)
+      //--- emit event
+      OnProfit();
+   else
+      //--- on loss
+      if(profitValue < 0)
+         //--- emit event
+         OnLoss();
 //--- operation succeed
    return true;
   }
