@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Leonardo Marinho"
 #property link      "https://github.com/dev-marinho/mql5-lib"
-#property version   "0.18"
+#property version   "0.19"
 
 #ifndef __C_EXPERT
 #define __C_EXPERT
@@ -225,7 +225,7 @@ protected:
    //--- Conditions to close a long position
    virtual bool      CloseLongCondition(const double, const double)  { return false; }
    //--- Set parameters to a new position
-   virtual bool      OpenParameters(COpenParameters*) { return false; }
+   virtual bool      OpenParameters(COpenParameters*) { return true; }
 
 public:
    //--- Constructor
