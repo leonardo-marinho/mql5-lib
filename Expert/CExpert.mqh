@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Leonardo Marinho"
 #property link      "https://github.com/dev-marinho/mql5-lib"
-#property version   "0.19"
+#property version   "0.20"
 
 #ifndef __C_EXPERT
 #define __C_EXPERT
@@ -126,6 +126,8 @@ private:
    //--- Tick behavior
    const M_TICK_MODES      m_tick_mode;
 
+   //--- New dy flag
+   bool              m_newDayFlag;
    //--- Prev bar id
    int                     m_prevBarId;
 
@@ -145,8 +147,6 @@ private:
 
    //--- Return if any position is open
    bool              AnyPositionOpen();
-   //--- Return profit of open positions
-   bool              Profit(double &profit, double &pips);
 
    //--- Initializes deal info instance
    bool              InitDealInfo(void);
@@ -179,6 +179,9 @@ protected:
    ENUM_TIMEFRAMES   Timeframe(void) { return m_timeframe; }
 
    COpenParameters   dump;
+   
+   //--- Return profit of open positions
+   bool              Profit(double &profit, double &pips);
 
    //--- Initializes indicators
    virtual bool      InitIndicators() { return true; }
@@ -213,6 +216,8 @@ protected:
    virtual void      OnLoss(void)   { return; }
    //--- Event called when a new bar is detected
    virtual void      OnNewBar(void) { return; }
+   //--- Event called when a new day is detected
+   virtual void      OnNewDay(void) { return; }
 
    //--- Conditions to open a long position
    virtual bool      OpenShortCondition(void)  { return false; }
@@ -250,7 +255,8 @@ CExpert::CExpert(string t_symbolName,ENUM_TIMEFRAMES t_timeframe,ulong t_magicNu
      m_magicNumber(t_magicNumber),
      m_tick_mode(t_tick_mode),
      m_timeInit(TimeCurrent()),
-     m_prevBarId(0)
+     m_prevBarId(0),
+     m_newDayFlag(false)
   {
   }
 //+------------------------------------------------------------------+
@@ -494,7 +500,7 @@ bool              CExpert::Open(ENUM_ORDER_TYPE t_order_type)
       parameters.Price(parameters.PositionType() == POSITION_TYPE_SELL ? SymbolInfo.Bid() : SymbolInfo.Ask());
      }
    if(!m_marketTrader.PositionOpen(
-         SymbolInfo.Name(), parameters.OrderType(), parameters.Volume(), parameters.Price(),
+         SymbolInfo.Name(), parameters.OrderType(), parameters.Volume(), 0,
          parameters.Sl() == 0 ? 0 : parameters.Price() + (
             MathAbs(parameters.Sl()) * SymbolInfo.TickSize() * (parameters.PositionType() == POSITION_TYPE_SELL ? 1 : -1)),
          parameters.Tp() == 0 ? 0 : parameters.Price() + (
@@ -746,6 +752,23 @@ void              CExpert::Tick()
 //--- test state running
    if(m_stateHolder.state() == STATE_RUNNING)
      {
+      //--- test for new day
+      if((ulong)(iTime(SymbolInfo.Name(), Timeframe(), 1) / 86400) != (ulong)(iTime(SymbolInfo.Name(), Timeframe(), 0) / 86400))
+        {
+         //--- test
+         if(!m_newDayFlag)
+           {
+            //--- set new day flag
+            m_newDayFlag = true;
+            //--- emit event
+            OnNewDay();
+           }
+        }
+      else
+        {
+         //--- reset new day flag
+         m_newDayFlag = false;
+        }
       //--- try conditions
       if(!CheckCloseCondition())
         {
