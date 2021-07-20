@@ -39,6 +39,7 @@ The CExpert class is a set of virtual methods for implementation of trading stra
 | OnLoss | Event called ater Close method if profit is lower than 0 |
 | OnProfit | Event called ater Close method if profit is higher than 0 |
 | OnNewBar | Event called when a new bar is detected |
+| OnNewDay | Event called on first bar of every day |
 ### Market
 | Method | Description |
 |--|--|
