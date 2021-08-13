@@ -1,11 +1,11 @@
 //+------------------------------------------------------------------+
-//|                                                           CState |
+//|                                                          CExpert |
 //|                                 Copyright 2021, Leonardo Marinho |
 //|                         https://github.com/dev-marinho/mql5-lib  |
 //+------------------------------------------------------------------+
 #property copyright "Leonardo Marinho"
 #property link      "https://github.com/dev-marinho/mql5-lib"
-#property version   "0.20"
+#property version   "0.21"
 
 #ifndef __C_EXPERT
 #define __C_EXPERT
@@ -126,10 +126,17 @@ private:
    //--- Tick behavior
    const M_TICK_MODES      m_tick_mode;
 
-   //--- New dy flag
-   bool              m_newDayFlag;
+   //--- New day flag
+   bool                    m_newDayFlag;
    //--- Prev bar id
    int                     m_prevBarId;
+
+   //--- Year checkpoint
+   int               m_checkpointYear;
+   //--- Month checkpoint
+   int               m_checkpointMonth;
+   //--- Day checkpoint
+   int               m_checkpointDay;
 
    //--- init time
    datetime          m_timeInit;
@@ -147,6 +154,9 @@ private:
 
    //--- Return if any position is open
    bool              AnyPositionOpen();
+
+   //--- Resolves time related events
+   void              ResolveTimeEvents(void);
 
    //--- Initializes deal info instance
    bool              InitDealInfo(void);
@@ -179,7 +189,7 @@ protected:
    ENUM_TIMEFRAMES   Timeframe(void) { return m_timeframe; }
 
    COpenParameters   dump;
-   
+
    //--- Return profit of open positions
    bool              Profit(double &profit, double &pips);
 
@@ -218,6 +228,10 @@ protected:
    virtual void      OnNewBar(void) { return; }
    //--- Event called when a new day is detected
    virtual void      OnNewDay(void) { return; }
+   //--- Event called when a new month is detected
+   virtual void      OnNewMonth(void) { return; }
+   //--- Event called when a new year is detected
+   virtual void      OnNewYear(void) { return; }
 
    //--- Conditions to open a long position
    virtual bool      OpenShortCondition(void)  { return false; }
@@ -256,7 +270,10 @@ CExpert::CExpert(string t_symbolName,ENUM_TIMEFRAMES t_timeframe,ulong t_magicNu
      m_tick_mode(t_tick_mode),
      m_timeInit(TimeCurrent()),
      m_prevBarId(0),
-     m_newDayFlag(false)
+     m_newDayFlag(false),
+     m_checkpointYear(-1),
+     m_checkpointMonth(-1),
+     m_checkpointDay(-1)
   {
   }
 //+------------------------------------------------------------------+
@@ -298,6 +315,34 @@ bool CExpert::AnyPositionOpen()
      }
 //--- operation succeed
    return true;
+  }
+//+------------------------------------------------------------------+
+//| Resolves time related events                                     |
+//+------------------------------------------------------------------+
+void CExpert::ResolveTimeEvents()
+  {
+//--- var to store
+   MqlDateTime datetimeStr;
+//--- get datetime
+   TimeCurrent(datetimeStr);
+//--- test for new day
+   if(datetimeStr.day != m_checkpointDay)
+     {
+      OnNewDay();
+      m_checkpointDay = datetimeStr.day;
+     }
+//--- test for new month
+   if(datetimeStr.mon != m_checkpointMonth)
+     {
+      OnNewMonth();
+      m_checkpointMonth = datetimeStr.mon;
+     }
+//--- test for new year
+   if(datetimeStr.year != m_checkpointYear)
+     {
+      OnNewYear();
+      m_checkpointYear = datetimeStr.year;
+     }
   }
 //+------------------------------------------------------------------+
 //| Return profit of open positions                                  |
@@ -752,23 +797,8 @@ void              CExpert::Tick()
 //--- test state running
    if(m_stateHolder.state() == STATE_RUNNING)
      {
-      //--- test for new day
-      if((ulong)(iTime(SymbolInfo.Name(), Timeframe(), 1) / 86400) != (ulong)(iTime(SymbolInfo.Name(), Timeframe(), 0) / 86400))
-        {
-         //--- test
-         if(!m_newDayFlag)
-           {
-            //--- set new day flag
-            m_newDayFlag = true;
-            //--- emit event
-            OnNewDay();
-           }
-        }
-      else
-        {
-         //--- reset new day flag
-         m_newDayFlag = false;
-        }
+      //--- rsolve time events
+      ResolveTimeEvents();
       //--- try conditions
       if(!CheckCloseCondition())
         {
@@ -778,10 +808,22 @@ void              CExpert::Tick()
       //--- detect new bar
       if(m_prevBarId != iBars(SymbolInfo.Name(), Timeframe()))
         {
-         //--- update prev bar id
-         m_prevBarId = iBars(SymbolInfo.Name(), Timeframe());
-         //--- emit event
-         OnNewBar();
+        //--- var to store current datetime data
+         MqlDateTime current;
+        //--- var to store bar datetime data
+         MqlDateTime barDate;
+         //--- store current datetime data
+         TimeCurrent(current);
+         //--- store bar datetime data
+         TimeToStruct(iTime(SymbolInfo.Name(), Timeframe(), 0), barDate);
+         //--- test if days are the same
+         if(current.day == barDate.day)
+           {
+            //--- update prev bar id
+            m_prevBarId = iBars(SymbolInfo.Name(), Timeframe());
+            //--- emit event
+            OnNewBar();
+           }
         }
       else
          //--- test if tick mode is new bar
