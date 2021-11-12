@@ -220,10 +220,14 @@ protected:
    virtual void      OnCheckCloseCondition(void) { return;}
    //--- Event called on Close method
    virtual void      OnClose(void)  { return; }
-   //--- Event called ater Close method if profit is lower than 0
-   virtual void      OnProfit(void) { return; }
    //--- Event called ater Close method if profit is higher than 0
+   virtual void      OnProfit(void) { return; }
+   //--- Event called ater Close method if profit is lower than 0
    virtual void      OnLoss(void)   { return; }
+   //--- Event called ater Close method if profit is lower than 0
+   virtual void      OnLossShort(void)   { return; }
+   //--- Event called ater Close method if profit is lower than 0
+   virtual void      OnLossLong(void)   { return; }
    //--- Event called when a new bar is detected
    virtual void      OnNewBar(void) { return; }
    //--- Event called when a new day is detected
@@ -606,8 +610,19 @@ bool              CExpert::Close(void)
    else
       //--- on loss
       if(profitValue < 0)
+        {
          //--- emit event
          OnLoss();
+         //--- test loss type
+         if (m_marketTrader.RequestType() % 2 == 0)
+         {
+            //--- emit buy loss type
+            OnLossShort();
+         } else {
+            //--- emit buy loss type
+            OnLossLong();
+         }
+        }
 //--- operation succeed
    return true;
   }
