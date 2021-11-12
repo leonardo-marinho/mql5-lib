@@ -37,6 +37,8 @@ The CExpert class is a set of virtual methods for implementation of trading stra
 | OnClose | Event called on Close method |
 | OnCheckCloseCondition| Event called on CheckCloseCondition method |
 | OnLoss | Event called ater Close method if profit is lower than 0 |
+| OnLossShort | Event called ater Close method if profit is lower than 0 on a short position|
+| OnLossLong | Event called ater Close method if profit is lower than 0 on a long position |
 | OnProfit | Event called ater Close method if profit is higher than 0 |
 | OnNewBar | Event called when a new bar is detected |
 | OnNewDay | Event called on first bar of every day |
