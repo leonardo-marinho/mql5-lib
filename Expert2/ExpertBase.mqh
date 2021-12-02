@@ -1,10 +1,16 @@
+//--- file define
 #ifndef __C__EXPERT_BASE__
 #define __C__EXPERT_BASE__
-
+//--- file includes
 #include <Object.mqh>
 #include <mql5-lib/Events/Events.mqh>
 #include <mql5-lib/States/State.mqh>
 
+//--- file constants
+#define CEXPERT_BASE_EVENT_ONERROR "onError"
+#define CEXPERT_BASE_EVENT_ONTIMER "onTimer"
+
+//--- expert base class
 class CExpertBase : public CObject
 {
 private:
