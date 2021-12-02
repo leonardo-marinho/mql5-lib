@@ -1,16 +1,39 @@
+//--- file define
 #ifndef __C__EXPERT_CALENDAR__
 #define __C__EXPERT_CALENDAR__
-
+//--- file includes
 #include <mql5-lib/Expert2/ExpertBase.mqh>
 
+//--- timer periods
+enum EExpertCalendarTimer_periods
+{
+   CEXPERT_CALENDAR_TIMER_PERIOD_1_SECOND = 1,
+   CEXPERT_CALENDAR_TIMER_PERIOD_10_SECONDS = 10,
+   CEXPERT_CALENDAR_TIMER_PERIOD_15_SECONDS = 15,
+   CEXPERT_CALENDAR_TIMER_PERIOD_30_SECONDS = 30,
+   CEXPERT_CALENDAR_TIMER_PERIOD_1_MINUTE = 60,
+   CEXPERT_CALENDAR_TIMER_PERIOD_10_MINUTES = 600,
+   CEXPERT_CALENDAR_TIMER_PERIOD_15_MINUTES = 900,
+   CEXPERT_CALENDAR_TIMER_PERIOD_30_MINUTES = 1800,
+   CEXPERT_CALENDAR_TIMER_PERIOD_1_HOUR = 3600,
+   CEXPERT_CALENDAR_TIMER_PERIOD_6_HOUR = 21600,
+   CEXPERT_CALENDAR_TIMER_PERIOD_12_HOUR = 43200,
+   CEXPERT_CALENDAR_TIMER_PERIOD_1_DAY = 86400
+};
+
+//--- expert calendar class
 class CExpertCalendar : public CExpertBase
 {
 private:
-   bool m_updateTimer;
+   //--- timer period
+   int m_timer_period;
+
+   //--- set timer
+   bool SetTimer();
 
 public:
    //--- constructor
-   CExpertCalendar();
+   CExpertCalendar(int);
 
    //--- init routine
    bool Init();
@@ -19,17 +42,22 @@ public:
    //--- tick routine
    bool Tick();
    //--- timer routine
-   bool Timer(datetime t_datetime);
+   bool Timer();
 };
 
-CExpertCalendar::CExpertCalendar()
-: m_updateTimer(true)
+CExpertCalendar::CExpertCalendar(int t_timer_period)
+    : m_timer_period(t_timer_period)
 {
+}
+
+bool CExpertCalendar::SetTimer()
+{
+   return SetTimer();
 }
 
 bool CExpertCalendar::Init()
 {
-   return EventSetTimer(60 - (uint)TimeTradeServer() % 60);
+   return EventSetTimer(m_timer_period - (uint)TimeTradeServer() % m_timer_period);
 }
 
 bool CExpertCalendar::DeInit()
@@ -43,10 +71,9 @@ bool CExpertCalendar::Tick()
    return true;
 }
 
-bool CExpertCalendar::Timer(datetime t_datetime)
+bool CExpertCalendar::Timer()
 {
-   Print("Novo minuto");
-   return EventSetTimer(60 - (uint)TimeTradeServer() % 60);
+   return SetTimer();
 }
 
 #endif
