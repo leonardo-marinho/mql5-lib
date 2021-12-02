@@ -1,12 +1,14 @@
+//--- file define
 #ifndef __C__EXPERT__
 #define __C__EXPERT__
-
+//--- file includes
 #include <Arrays/ArrayObj.mqh>
 #include <mql5-lib/Expert2/ExpertBase.mqh>
 #include <mql5-lib/Expert2/ExpertCalendar.mqh>
 #include <mql5-lib/Expert2/ExpertSignal.mqh>
 #include <mql5-lib/Expert2/ExpertTrader.mqh>
 
+//--- timer periods
 enum EExpertStates
 {
    EXPERT_ERROR_INIT,
@@ -15,6 +17,7 @@ enum EExpertStates
    EXPERT_ERROR_TIMER,
 };
 
+//--- expert class
 class CExpert : public CExpertBase
 {
 private:
@@ -46,7 +49,7 @@ public:
    //--- tick routine
    bool Tick();
    //--- timer routine
-   bool Timer(datetime t_datetime);
+   bool Timer();
 
    //--- set expert calendar instance pointer
    bool Calendar(CExpertCalendar *);
@@ -160,14 +163,16 @@ bool CExpert::Tick()
    return true;
 }
 
-bool CExpert::Timer(datetime t_datetime)
+bool CExpert::Timer()
 {
    //--- timer expert calendar
-   if (!Calendar().Timer(t_datetime))
+   if (!Calendar().Timer())
    {
-      State().state(EXPERT_ERROR_TIMER);
+      Events().Emit(CEXPERT_BASE_EVENT_ONERROR);
       return false;
    }
+   // emit event
+   Events().Emit(CEXPERT_BASE_EVENT_ONTIMER);
    //--- operation succeed
    return true;
 }
