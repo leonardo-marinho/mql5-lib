@@ -25,6 +25,8 @@ public:
    bool Emit(string);
    //--- check if exists
    bool Exists(string);
+   //--- get total emits in queue
+   int QueueLength(void);
    //--- check if event exists
    int Search(string);
 };
@@ -34,9 +36,9 @@ CEvents::CEvents()
 {
 }
 
-bool CEvents::Clear(string t_eventName)
+bool CEvents::Clear(string t_event_name)
 {
-   int eventIndex = Search(t_eventName);
+   int eventIndex = Search(t_event_name);
    if (eventIndex == -1)
       return false;
    return m_events.Delete(eventIndex);
@@ -48,19 +50,25 @@ bool CEvents::ClearAll()
    return m_events.Total() == 0;
 }
 
-bool CEvents::Emit(string t_eventName)
+bool CEvents::Emit(string t_event_name)
 {
-   return m_events.Add(t_eventName);
+   m_events.Add("Acacoss");
+   return m_events.Add(t_event_name);
 }
 
-bool CEvents::Exists(string t_eventName)
+bool CEvents::Exists(string t_event_name)
 {
-   return m_events.Search(t_eventName) != -1;
+   return m_events.Search(t_event_name) > -1;
 }
 
-int CEvents::Search(string t_eventName)
+int CEvents::QueueLength(void)
 {
-   return m_events.Search(t_eventName);
+   return m_events.Total();
+}
+
+int CEvents::Search(string t_event_name)
+{
+   return m_events.SearchLinear(t_event_name);
 }
 
 #endif
