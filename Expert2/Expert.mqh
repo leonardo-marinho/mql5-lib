@@ -7,6 +7,7 @@
 #include <mql5-lib/Expert2/ExpertCalendar.mqh>
 #include <mql5-lib/Expert2/ExpertSignal.mqh>
 #include <mql5-lib/Expert2/ExpertTrader.mqh>
+#include <mql5-lib/Expert2/OrderParameters.mqh>
 
 //--- timer periods
 enum EExpertStates
@@ -36,27 +37,34 @@ protected:
    //--- access expert trader instance pointer
    CExpertTrader *Trader();
 
+   //--- test signal conditions
+   bool TestSignalConditions(CExpertSignal *);
+
 public:
    //--- constructor
-   CExpert();
+   CExpert(void);
    //--- destructor
-   ~CExpert();
+   ~CExpert(void);
 
    //--- init routine
-   bool Init();
+   bool Init(void);
    //--- init routine
-   bool DeInit();
+   bool DeInit(void);
    //--- tick routine
-   bool Tick();
+   bool Tick(void);
    //--- timer routine
-   bool Timer();
+   bool Timer(void);
 
    //--- set expert calendar instance pointer
    bool Calendar(CExpertCalendar *);
    //--- set events instance pointer
    bool Events(CEvents *);
+   //--- set expert signals element instance pointer
+   bool Signals(CExpertSignal *);
    //--- set expert trader instance pointer
    bool Trader(CExpertTrader *);
+   //--- set symbol info instance pointer
+   bool SymbolInfo(CSymbolInfo *);
 };
 
 CExpert::CExpert()
@@ -71,6 +79,23 @@ CExpert::~CExpert()
    delete m_expert_calendar;
    delete m_expert_signals;
    delete m_expert_trader;
+}
+
+bool CExpert::TestSignalConditions(CExpertSignal *t_signal)
+{
+   if (t_signal.LongCloseConditional() || t_signal.LongCloseConditional() || t_signal.ShortCloseConditional())
+   {
+      Trader().Close();
+   }
+   if (t_signal.LongOpenConditional())
+   {
+      Trader().OpenLong();
+   }
+   else if (t_signal.ShortOpenConditional())
+   {
+      Trader().OpenShort();
+   }
+   return true;
 }
 
 CExpertCalendar *CExpert::Calendar()
@@ -90,6 +115,11 @@ CExpertTrader *CExpert::Trader()
 
 bool CExpert::Init()
 {
+   //--- set symbol info
+   if (!InitSymbolInfo())
+      return false;
+   //--- set timeframe
+   m_timeframe = _Period;
    //--- init expert calendar and trader
    if (!Calendar().Init() || !Trader().Init())
    {
@@ -98,7 +128,7 @@ bool CExpert::Init()
    }
    //--- init expert signals
    CArrayObj *signals = Signals();
-   if (signals.Total() > 0)
+   if (signals.Total() == 0)
    {
       Print("No signals added. Trader will never be triggered");
    }
@@ -140,6 +170,14 @@ bool CExpert::DeInit()
 
 bool CExpert::Tick()
 {
+   //--- refresh symbol info
+   // SymbolInfo().RefreshRates();
+   //--- tick expert calendar and trader
+   if (!Calendar().Tick() || !Trader().Tick())
+   {
+      State().state(EXPERT_ERROR_TICK);
+      return false;
+   }
    //--- tick expert signals
    CArrayObj *signals = Signals();
    for (int index = 0; index < signals.Total(); index++)
@@ -150,12 +188,7 @@ bool CExpert::Tick()
          State().state(EXPERT_ERROR_TICK);
          return false;
       }
-   }
-   //--- tick expert calendar and trader
-   if (!Calendar().Tick() || !Trader().Tick())
-   {
-      State().state(EXPERT_ERROR_TICK);
-      return false;
+      TestSignalConditions(signal);
    }
    //--- clear events queue
    Events().ClearAll();
@@ -200,14 +233,42 @@ bool CExpert::Events(CEvents *t_events)
          return false;
       }
    }
+   m_events = t_events;
    //--- operation succeed
-   return true;
+   return Events() != NULL;
+}
+
+bool CExpert::Signals(CExpertSignal *t_expert_signal)
+{
+   return m_expert_signals.Add(t_expert_signal);
 }
 
 bool CExpert::Trader(CExpertTrader *t_expert_trader)
 {
    m_expert_trader = t_expert_trader;
    return m_expert_trader != NULL;
+}
+
+bool CExpert::SymbolInfo(CSymbolInfo *t_symbol_info)
+{
+   //--- set expert calendar and trader event instance
+   if (!Calendar().SymbolInfo(t_symbol_info) || !Trader().SymbolInfo(t_symbol_info))
+   {
+      return false;
+   }
+   //--- set expert signal event instance
+   CArrayObj *signals = Signals();
+   for (int index = 0; index < signals.Total(); index++)
+   {
+      CExpertSignal *signal = signals.At(index);
+      if (!signal.SymbolInfo(t_symbol_info))
+      {
+         return false;
+      }
+   }
+   m_symbol_info = t_symbol_info;
+   //--- operation succeed
+   return SymbolInfo() != NULL;
 }
 
 #endif
