@@ -69,8 +69,6 @@ public:
    bool Init(void);
    //--- deinit routine
    bool DeInit(void);
-   //--- tick routine
-   bool Tick(void);
 
    //--- open long routine
    bool OpenLong(COrderParameters &);
@@ -144,11 +142,6 @@ bool CExpertTrader::DeInit()
    if (IsPositionOpen() && !Close())
       return false;
    //--- operation succeed
-   return true;
-}
-
-bool CExpertTrader::Tick()
-{
    return true;
 }
 
