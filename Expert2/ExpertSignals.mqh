@@ -7,6 +7,12 @@
 #include <mql5-lib/Expert2/ExpertSignal.mqh>
 #include <mql5-lib/Expert2/ExpertTrader.mqh>
 
+//--- file constants
+#define CEXPERT_SIGNALS_EVENT_ONCONDITIONOPENMET "onConditionOpenMet"
+#define CEXPERT_SIGNALS_EVENT_ONCONDITIONOPENLONGMET "onConditionOpenLongMet"
+#define CEXPERT_SIGNALS_EVENT_ONCONDITIONOPENSHORTMET "onConditionOpenShortMet"
+#define CEXPERT_SIGNALS_EVENT_ONCONDITIONCLOSEMET "onConditionCloseMet"
+
 //--- expert sinals class
 class CExpertSignals : public CExpertBaseWrap
 {
@@ -39,6 +45,8 @@ bool CExpertSignals::CheckCloseConditionals(datetime t_calendar_timer_checkpoint
     if (signal.GeneralCloseConditional(t_calendar_timer_checkpoint) || signal.LongCloseConditional(t_calendar_timer_checkpoint) || signal.ShortCloseConditional(t_calendar_timer_checkpoint))
     {
 #ifdef __DEBUG_ Print("Close condition met"); #endif
+      //--- emit event
+      Events().Emit(CEXPERT_SIGNALS_EVENT_ONCONDITIONCLOSEMET);
       //--- close position
       m_trader.Close();
       //-- conditional check met
@@ -63,6 +71,9 @@ bool CExpertSignals::CheckOpenConditionals(datetime t_calendar_timer_checkpoint)
     {
       //-- conditional check met
 #ifdef __DEBUG_ Print("Open long condition met"); #endif
+      //--- emit event
+      Events().Emit(CEXPERT_SIGNALS_EVENT_ONCONDITIONOPENMET);
+      Events().Emit(CEXPERT_SIGNALS_EVENT_ONCONDITIONOPENLONGMET);
       //--- get order parameters
       COrderParameters order_parameters;
       signal.OrderParameters(order_parameters);
@@ -74,6 +85,9 @@ bool CExpertSignals::CheckOpenConditionals(datetime t_calendar_timer_checkpoint)
     {
       //-- conditional check met
 #ifdef __DEBUG_ Print("Open short condition met"); #endif
+      //--- emit event
+      Events().Emit(CEXPERT_SIGNALS_EVENT_ONCONDITIONOPENMET);
+      Events().Emit(CEXPERT_SIGNALS_EVENT_ONCONDITIONOPENSHORTMET);
       //--- get order parameters
       COrderParameters order_parameters;
       signal.OrderParameters(order_parameters);
