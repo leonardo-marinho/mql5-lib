@@ -52,13 +52,12 @@ bool CEvents::ClearAll()
 
 bool CEvents::Emit(string t_event_name)
 {
-   m_events.Add("Acacoss");
    return m_events.Add(t_event_name);
 }
 
 bool CEvents::Exists(string t_event_name)
 {
-   return m_events.Search(t_event_name) > -1;
+   return m_events.SearchLinear(t_event_name) > -1;
 }
 
 int CEvents::QueueLength(void)
