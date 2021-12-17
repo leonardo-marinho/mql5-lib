@@ -42,8 +42,6 @@ public:
    bool Init();
    //--- deinit routine
    bool DeInit();
-   //--- tick routine
-   bool Tick();
    //--- timer routine
    bool Timer();
 
@@ -69,11 +67,6 @@ bool CExpertCalendar::Init()
 bool CExpertCalendar::DeInit()
 {
    EventKillTimer();
-   return true;
-}
-
-bool CExpertCalendar::Tick()
-{
    return true;
 }
 
