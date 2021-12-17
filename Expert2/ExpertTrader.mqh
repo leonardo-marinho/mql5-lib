@@ -8,6 +8,14 @@
 #include <Trade/PositionInfo.mqh>
 #include <Trade/Trade.mqh>
 
+//--- file constants
+#define CEXPERT_TRADER_EVENT_ONOPEN "onOpen"
+#define CEXPERT_TRADER_EVENT_ONCLOSE "onClose"
+#define CEXPERT_TRADER_EVENT_ONPROFIT "onProfit"
+#define CEXPERT_TRADER_EVENT_ONLOSS "onLoss"
+#define CEXPERT_TRADER_EVENT_ONLOSSLONG "onLossLong"
+#define CEXPERT_TRADER_EVENT_ONLOSSSHORT "onLossShort"
+
 //--- expert trader class
 class CExpertTrader : public CExpertBase
 {
@@ -21,6 +29,14 @@ private:
    //--- trade instance
    CTrade *m_trade;
 
+   COrderParameters m_lastOrderParameters;
+
+   //--- init time
+   datetime m_time_init;
+
+   //--- position magic number
+   int m_magic_number;
+
 protected:
    //--- deal info instance
    CDealInfo *Deal();
@@ -31,27 +47,53 @@ protected:
    //--- trade instance
    CTrade *Trade();
 
-   bool Open(ENUM_ORDER_TYPE);
+   //--- open position
+   bool Open(ENUM_ORDER_TYPE, COrderParameters &);
+   //--- routine to update is position open flag
+   bool UpdateIsPositionOpenFlag();
 
 public:
+   //--- position open flag
+   bool m_position_open;
+
    //--- constructor
-   CExpertTrader(void);
+   CExpertTrader(int);
 
    //--- init routine
    bool Init(void);
+   //--- deinit routine
+   bool DeInit(void);
    //--- tick routine
    bool Tick(void);
 
    //--- open long routine
-   bool OpenLong(void);
+   bool OpenLong(COrderParameters &);
    //--- open short routine
-   bool OpenShort(void);
+   bool OpenShort(COrderParameters &);
    //--- close routine
    bool Close(void);
+
+   //--- return if position is open
+   bool IsPositionOpen();
+   //--- current/last position profit
+   bool Profit(double &, double &);
 };
 
-CExpertTrader::CExpertTrader()
+CExpertTrader::CExpertTrader(int t_magicNumber)
+    : m_magic_number(t_magicNumber),
+      m_time_init(TimeCurrent()),
+      m_position_open(false)
 {
+}
+
+CDealInfo *CExpertTrader::Deal()
+{
+   return m_deal;
+}
+
+CPositionInfo *CExpertTrader::Position()
+{
+   return m_position;
 }
 
 CTrade *CExpertTrader::Trade()
@@ -70,6 +112,7 @@ bool CExpertTrader::Init()
    m_trade = new CTrade();
    if (m_trade == NULL)
       return false;
+   m_trade.SetExpertMagicNumber(m_magic_number);
    //-- init deal instance
    m_deal = new CDealInfo();
    if (m_deal == NULL)
@@ -82,7 +125,19 @@ bool CExpertTrader::Init()
    m_position = new CPositionInfo();
    if (m_position == NULL)
       return false;
+   //--- update is position open flag
+   if (!UpdateIsPositionOpenFlag())
+      return false;
    //-- operation success
+   return true;
+}
+
+bool CExpertTrader::DeInit()
+{
+   //--- close open positions
+   if (IsPositionOpen() && !Close())
+      return false;
+   //--- operation succeed
    return true;
 }
 
@@ -91,65 +146,208 @@ bool CExpertTrader::Tick()
    return true;
 }
 
-//--- open long routine
-bool CExpertTrader::OpenLong()
+bool CExpertTrader::IsPositionOpen()
 {
-   return Open(ORDER_TYPE_SELL);
+   return m_position_open;
+   //--- try select position
+   if (!Position().SelectByMagic(SymbolInfo().Name(), m_magic_number))
+   {
+      //--- selection failed
+      return false;
+   }
+   //--- test volume
+   if (Position().Volume() == 0)
+   {
+      //--- volume is zero
+      return false;
+   }
+   //--- operation succeed
+   return true;
+}
+
+bool CExpertTrader::UpdateIsPositionOpenFlag()
+{
+   //--- try select position
+   if (!Position().SelectByMagic(SymbolInfo().Name(), m_magic_number))
+   {
+      //--- selection failed
+      m_position_open = false;
+      return true;
+   }
+   //--- test volume
+   if (Position().Volume() == 0)
+   {
+      //--- volume is zero
+      m_position_open = false;
+      return true;
+   }
+   //--- position is open
+   m_position_open = true;
+   //--- operation succeed
+   return true;
+}
+
+bool CExpertTrader::Profit(double &profit, double &pips)
+{
+   //--- check if any position is open
+   if (IsPositionOpen())
+   {
+      //--- check if real profit flag is active
+      if (m_lastOrderParameters.UseRealProfit())
+      {
+         if (m_lastOrderParameters.PositionType() == POSITION_TYPE_BUY)
+         {
+            //--- calculate real profit to buy position
+            profit = (SymbolInfo().Bid() - Position().PriceOpen()) / SymbolInfo().TickSize() * SymbolInfo().TickValue() * Position().Volume();
+         }
+         else
+         {
+            //--- calculate real profit to sell position
+            profit = -(SymbolInfo().Ask() - Position().PriceOpen()) / SymbolInfo().TickSize() * SymbolInfo().TickValue() * Position().Volume();
+         }
+      }
+      else
+      {
+         //--- set profit from position calculation
+         profit = Position().Profit();
+      }
+   }
+   else
+   {
+      //--- update history
+      HistorySelect(m_time_init, TimeCurrent());
+      //--- select deal
+      if (!Deal().SelectByIndex(HistoryDealsTotal() - 1))
+      {
+#ifdef __DEBUG Print("Could not fetch deal profit"); #endif
+         //--- operation failed
+         return false;
+      }
+      //--- move profit
+      profit = Deal().Profit();
+   }
+   //--- move pips
+   pips = profit / SymbolInfo().TickValue() / (Position().Volume() == 0 ? 1 : Position().Volume());
+   //--- operation succeed
+   return true;
+}
+
+//--- open long routine
+bool CExpertTrader::OpenLong(COrderParameters &t_order_parameters)
+{
+   return Open(ORDER_TYPE_SELL, t_order_parameters);
 }
 
 //--- open short routine
-bool CExpertTrader::OpenShort()
+bool CExpertTrader::OpenShort(COrderParameters &t_order_parameters)
 {
-   return Open(ORDER_TYPE_BUY);
+   return Open(ORDER_TYPE_BUY, t_order_parameters);
 }
 
 //--- open routine
-bool CExpertTrader::Open(ENUM_ORDER_TYPE t_order_type)
+bool CExpertTrader::Open(ENUM_ORDER_TYPE t_order_type, COrderParameters &t_order_parameters)
 {
+   //--- test if position is already open
+   if ((m_lastOrderParameters.OnePerBar() &&
+        m_lastOrderParameters.BarIdentification() == iBars(SymbolInfo().Name(), Timeframe())))
+   {
+      // quit
+      return true;
+   }
    //--- test if order type is supported
    if (!(t_order_type == ORDER_TYPE_BUY ||
          t_order_type == ORDER_TYPE_SELL))
    {
-#ifdef __DEBUG__ Print("Order ", t_order_type, " type is not supported"); #endif
+#ifdef __DEBUG___ Print("Order ", t_order_type, " type is not supported"); #endif
       //--- order type is not supported
       return false;
    }
-   //--- initialize new instance
-   COrderParameters *parameters = new COrderParameters();
    //--- set order type
-   parameters.OrderType(t_order_type);
+   t_order_parameters.OrderType(t_order_type);
    //--- set bar id
-   parameters.BarIdentification(iBars(SymbolInfo().Name(), Timeframe()));
+   t_order_parameters.BarIdentification(iBars(SymbolInfo().Name(), Timeframe()));
    //--- set deviation
-   Trade().SetDeviationInPoints(parameters.Deviation());
+   Trade().SetDeviationInPoints(t_order_parameters.Deviation());
    //--- check if price is valid
-   if (parameters.Price() == 0)
+   if (t_order_parameters.Price() == 0)
    {
       //--- resolve price
-      parameters.Price(parameters.PositionType() == POSITION_TYPE_SELL ? SymbolInfo().Bid() : SymbolInfo().Ask());
+      t_order_parameters.Price(t_order_parameters.PositionType() == POSITION_TYPE_SELL ? SymbolInfo().Bid() : SymbolInfo().Ask());
    }
    if (!Trade().PositionOpen(
-           SymbolInfo().Name(), parameters.OrderType(), parameters.Volume(), 0,
-           parameters.Sl() == 0 ? 0 : parameters.Price() + (MathAbs(parameters.Sl()) * SymbolInfo().TickSize() * (parameters.PositionType() == POSITION_TYPE_SELL ? 1 : -1)),
-           parameters.Tp() == 0 ? 0 : parameters.Price() + (MathAbs(parameters.Tp()) * SymbolInfo().TickSize() * (parameters.PositionType() == POSITION_TYPE_SELL ? -1 : 1))))
+           SymbolInfo().Name(), t_order_parameters.OrderType(), t_order_parameters.Volume(), 0,
+           t_order_parameters.Sl() == 0 ? 0 : t_order_parameters.Price() + (MathAbs(t_order_parameters.Sl()) * SymbolInfo().TickSize() * (t_order_parameters.PositionType() == POSITION_TYPE_SELL ? 1 : -1)),
+           t_order_parameters.Tp() == 0 ? 0 : t_order_parameters.Price() + (MathAbs(t_order_parameters.Tp()) * SymbolInfo().TickSize() * (t_order_parameters.PositionType() == POSITION_TYPE_SELL ? -1 : 1))))
    {
-#ifdef __DEBUG_ Print("Trade validation error"); #endif
+#ifdef __DEBUG__ Print("Trade open validation error"); #endif
       //--- operation failed
       return false;
    }
    //--- test retcode
    if (Trade().ResultRetcode() != TRADE_RETCODE_DONE)
    {
-#ifdef __DEBUG_ Print("Return code ", Trade().ResultRetcode(), " is not valid"); #endif
+#ifdef __DEBUG__ Print("Return code ", Trade().ResultRetcode(), " is not valid"); #endif
       //--- operation failed
       return false;
    }
+   //--- last parameters
+   m_lastOrderParameters = t_order_parameters;
+   //--- set position open flag
+   UpdateIsPositionOpenFlag();
+   //--- emit event
+   Events().Emit(CEXPERT_TRADER_EVENT_ONOPEN);
+   //--- operation succeed
    return true;
 }
 
 //--- close routine
 bool CExpertTrader::Close()
 {
+   //--- close position
+   if (!Trade().PositionClose(SymbolInfo().Name()))
+   {
+#ifdef __DEBUG__ Print("Trader Close validation error"); #endif
+      //--- operation failed
+      return false;
+   }
+   //--- test retcode
+   if (Trade().ResultRetcode() != TRADE_RETCODE_DONE)
+   {
+#ifdef __DEBUG__ Print("Retcode ", Trade().ResultRetcode(), " is not valid"); #endif
+      //--- operation failed
+      return false;
+   }
+   //--- emit event
+   Events().Emit(CEXPERT_TRADER_EVENT_ONCLOSE);
+   //--- set position open flag
+   UpdateIsPositionOpenFlag();
+   //--- var to store profit
+   double profitValue, profitPips;
+   //--- get profit
+   Profit(profitValue, profitPips);
+   //--- on profit
+   if (profitValue > 0)
+      //--- emit event
+      Events().Emit(CEXPERT_TRADER_EVENT_ONPROFIT);
+   else
+       //--- on loss
+       if (profitValue < 0)
+   {
+      //--- emit event
+      Events().Emit(CEXPERT_TRADER_EVENT_ONLOSS);
+      //--- test loss type
+      if (Trade().RequestType() % 2 == 0)
+      {
+         //--- emit buy loss type
+         Events().Emit(CEXPERT_TRADER_EVENT_ONLOSSSHORT);
+      }
+      else
+      {
+         //--- emit buy loss type
+         Events().Emit(CEXPERT_TRADER_EVENT_ONLOSSLONG);
+      }
+   }
+   //--- operation succeed
    return true;
 }
 

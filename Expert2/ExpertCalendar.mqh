@@ -28,6 +28,9 @@ private:
    //--- timer period
    int m_timer_period;
 
+   //--- timer checkpoint
+   datetime m_timer_checkpoint;
+
    //--- set timer
    bool SetTimer();
 
@@ -43,6 +46,9 @@ public:
    bool Tick();
    //--- timer routine
    bool Timer();
+
+   //--- access timer checkpoint
+   datetime TimerCheckpoint();
 };
 
 CExpertCalendar::CExpertCalendar(int t_timer_period)
@@ -73,7 +79,13 @@ bool CExpertCalendar::Tick()
 
 bool CExpertCalendar::Timer()
 {
+   m_timer_checkpoint = TimeTradeServer();
    return SetTimer();
+}
+
+datetime CExpertCalendar::TimerCheckpoint()
+{
+   return m_timer_checkpoint;
 }
 
 #endif

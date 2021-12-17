@@ -3,16 +3,20 @@
 
 #include <Indicators/Indicators.mqh>
 #include <mql5-lib/Expert2/ExpertBase.mqh>
+#include <mql5-lib/Expert2/OrderParameters.mqh>
 
 class CExpertSignal : public CExpertBase
 {
+private:
+   string m_name;
+
 protected:
    //--- indicators array
    CIndicators *m_indicators;
 
 public:
    //--- constructor
-   CExpertSignal();
+   CExpertSignal(string);
    //--- destructor
    ~CExpertSignal();
 
@@ -21,26 +25,38 @@ public:
    //--- tick routine
    virtual bool Tick();
 
+   //--- access signal name
+   string Name();
+
    // long open conditional
-   virtual bool LongOpenConditional();
+   virtual bool LongOpenConditional(datetime);
    // short open conditional
-   virtual bool ShortOpenConditional();
+   virtual bool ShortOpenConditional(datetime);
 
    // long close conditional
-   virtual bool LongCloseConditional();
+   virtual bool LongCloseConditional(datetime);
    // short close conditional
-   virtual bool ShortCloseConditional();
+   virtual bool ShortCloseConditional(datetime);
    // general close conditional
-   virtual bool GeneralCloseConditional();
+   virtual bool GeneralCloseConditional(datetime);
+
+   //--- set order parameters
+   virtual void OrderParameters(COrderParameters &) {}
 };
 
-CExpertSignal::CExpertSignal()
+CExpertSignal::CExpertSignal(string t_name = "")
+    : m_name(t_name)
 {
 }
 
 CExpertSignal::~CExpertSignal()
 {
    delete m_indicators;
+}
+
+string CExpertSignal::Name()
+{
+   return m_name;
 }
 
 bool CExpertSignal::Init()
@@ -58,27 +74,27 @@ bool CExpertSignal::Tick()
    return true;
 }
 
-bool CExpertSignal::LongOpenConditional()
+bool CExpertSignal::LongOpenConditional(datetime t_datetime)
 {
    return false;
 }
 
-bool CExpertSignal::ShortOpenConditional()
+bool CExpertSignal::ShortOpenConditional(datetime t_datetime)
 {
    return false;
 }
 
-bool CExpertSignal::LongCloseConditional()
+bool CExpertSignal::LongCloseConditional(datetime t_datetime)
 {
    return false;
 }
 
-bool CExpertSignal::ShortCloseConditional()
+bool CExpertSignal::ShortCloseConditional(datetime t_datetime)
 {
    return false;
 }
 
-bool CExpertSignal::GeneralCloseConditional()
+bool CExpertSignal::GeneralCloseConditional(datetime t_datetime)
 {
    return false;
 }

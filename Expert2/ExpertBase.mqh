@@ -3,6 +3,7 @@
 #define __C__EXPERT_BASE__
 //--- file includes
 #include <Object.mqh>
+#include <Indicators/Indicators.mqh>
 #include <mql5-lib/Events/Events.mqh>
 #include <mql5-lib/States/State.mqh>
 #include <Trade/SymbolInfo.mqh>
@@ -23,6 +24,8 @@ protected:
    CEvents *m_events;
    //--- symbol info instance
    CSymbolInfo *m_symbol_info;
+   //--- indicators object
+   CIndicators *m_indicators;
 
    //--- timeframe
    ENUM_TIMEFRAMES m_timeframe;
@@ -51,6 +54,10 @@ public:
    virtual bool Events(CEvents *);
    //--- access events instance pointer
    CEvents *Events();
+   //--- set indicators instance pointer
+   virtual bool Indicators(CIndicators *);
+   //--- access indicators instance pointer
+   CIndicators *Indicators();
    //--- set state instance pointer
    virtual bool State(CState<int> *);
    //--- access state instance pointer
@@ -63,6 +70,8 @@ public:
 
 CExpertBase::CExpertBase()
     : m_events(new CEvents),
+      m_indicators(new CIndicators),
+      m_timeframe(_Period),
       m_state(new CState<int>)
 {
 }
@@ -70,6 +79,7 @@ CExpertBase::CExpertBase()
 CExpertBase::~CExpertBase()
 {
    delete m_events;
+   delete m_indicators;
    delete m_state;
    delete m_symbol_info;
 }
@@ -103,6 +113,17 @@ CEvents *CExpertBase::Events()
    return m_events;
 }
 
+bool CExpertBase::Indicators(CIndicators *t_indicators)
+{
+   m_indicators = t_indicators;
+   return m_indicators != NULL;
+}
+
+CIndicators *CExpertBase::Indicators()
+{
+   return m_indicators;
+}
+
 bool CExpertBase::State(CState<int> *t_state)
 {
    m_state = t_state;
@@ -127,8 +148,6 @@ CSymbolInfo *CExpertBase::SymbolInfo()
 
 bool CExpertBase::Init()
 {
-   //--- set timeframe
-   m_timeframe = _Period;
    //--- operation success
    return true;
 }
