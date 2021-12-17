@@ -10,8 +10,14 @@
 
 //--- file constants
 #define CEXPERT_TRADER_EVENT_ONOPEN "onOpen"
+#define CEXPERT_TRADER_EVENT_ONOPENLONG "onOpenLong"
+#define CEXPERT_TRADER_EVENT_ONOPENSHORT "onOpenShort"
 #define CEXPERT_TRADER_EVENT_ONCLOSE "onClose"
+#define CEXPERT_TRADER_EVENT_ONCLOSELONG "onCloseLong"
+#define CEXPERT_TRADER_EVENT_ONCLOSESHORT "onCloseShort"
 #define CEXPERT_TRADER_EVENT_ONPROFIT "onProfit"
+#define CEXPERT_TRADER_EVENT_ONPROFITLONG "onProfitLong"
+#define CEXPERT_TRADER_EVENT_ONPROFITSHORT "onProfitShort"
 #define CEXPERT_TRADER_EVENT_ONLOSS "onLoss"
 #define CEXPERT_TRADER_EVENT_ONLOSSLONG "onLossLong"
 #define CEXPERT_TRADER_EVENT_ONLOSSSHORT "onLossShort"
@@ -296,6 +302,14 @@ bool CExpertTrader::Open(ENUM_ORDER_TYPE t_order_type, COrderParameters &t_order
    UpdateIsPositionOpenFlag();
    //--- emit event
    Events().Emit(CEXPERT_TRADER_EVENT_ONOPEN);
+   if (t_order_parameters.OrderType() == ORDER_TYPE_SELL)
+   {
+      Events().Emit(CEXPERT_TRADER_EVENT_ONOPENLONG);
+   }
+   else
+   {
+      Events().Emit(CEXPERT_TRADER_EVENT_ONOPENSHORT);
+   }
    //--- operation succeed
    return true;
 }
@@ -317,18 +331,45 @@ bool CExpertTrader::Close()
       //--- operation failed
       return false;
    }
-   //--- emit event
-   Events().Emit(CEXPERT_TRADER_EVENT_ONCLOSE);
    //--- set position open flag
    UpdateIsPositionOpenFlag();
    //--- var to store profit
    double profitValue, profitPips;
+   //--- store short flag
+   bool shortPosition = Trade().RequestType() % 2 == 0;
+   //--- emit event
+   Events().Emit(CEXPERT_TRADER_EVENT_ONCLOSE);
+   //--- if short
+   if (shortPosition)
+   {
+      //--- emit event
+      Events().Emit(CEXPERT_TRADER_EVENT_ONCLOSESHORT);
+   }
+   //--- else long
+   else
+   {
+      //--- emit event
+      Events().Emit(CEXPERT_TRADER_EVENT_ONCLOSELONG);
+   }
    //--- get profit
    Profit(profitValue, profitPips);
    //--- on profit
    if (profitValue > 0)
+   {
       //--- emit event
       Events().Emit(CEXPERT_TRADER_EVENT_ONPROFIT);
+      //--- test loss type
+      if (shortPosition)
+      {
+         //--- emit buy loss type
+         Events().Emit(CEXPERT_TRADER_EVENT_ONPROFITSHORT);
+      }
+      else
+      {
+         //--- emit buy loss type
+         Events().Emit(CEXPERT_TRADER_EVENT_ONPROFITLONG);
+      }
+   }
    else
        //--- on loss
        if (profitValue < 0)
@@ -336,7 +377,7 @@ bool CExpertTrader::Close()
       //--- emit event
       Events().Emit(CEXPERT_TRADER_EVENT_ONLOSS);
       //--- test loss type
-      if (Trade().RequestType() % 2 == 0)
+      if (shortPosition)
       {
          //--- emit buy loss type
          Events().Emit(CEXPERT_TRADER_EVENT_ONLOSSSHORT);
