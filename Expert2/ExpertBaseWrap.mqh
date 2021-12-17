@@ -6,7 +6,7 @@
 #include <mql5-lib/Expert2/ExpertBase.mqh>
 
 //--- expert base wrap class
-class CExpertBaseWrap : CExpertBase
+class CExpertBaseWrap : public CExpertBase
 {
 protected:
   //--- array of experts
