@@ -1,29 +1,29 @@
 //--- file define
-#ifndef __C__EXPERT_TRADER__
-#define __C__EXPERT_TRADER__
+#ifndef __C__TRADER__
+#define __C__TRADER__
 //--- file includes
-#include <mql5-lib/Expert2/ExpertBase.mqh>
-#include <mql5-lib/Expert2/OrderParameters.mqh>
+#include <Arrays/ArrayObj.mqh>
+#include <mql5-lib/Trader/OrderParameters.mqh>
 #include <Trade/DealInfo.mqh>
 #include <Trade/PositionInfo.mqh>
 #include <Trade/Trade.mqh>
 
 //--- file constants
-#define CEXPERT_TRADER_EVENT_ONOPEN "onOpen"
-#define CEXPERT_TRADER_EVENT_ONOPENLONG "onOpenLong"
-#define CEXPERT_TRADER_EVENT_ONOPENSHORT "onOpenShort"
-#define CEXPERT_TRADER_EVENT_ONCLOSE "onClose"
-#define CEXPERT_TRADER_EVENT_ONCLOSELONG "onCloseLong"
-#define CEXPERT_TRADER_EVENT_ONCLOSESHORT "onCloseShort"
-#define CEXPERT_TRADER_EVENT_ONPROFIT "onProfit"
-#define CEXPERT_TRADER_EVENT_ONPROFITLONG "onProfitLong"
-#define CEXPERT_TRADER_EVENT_ONPROFITSHORT "onProfitShort"
-#define CEXPERT_TRADER_EVENT_ONLOSS "onLoss"
-#define CEXPERT_TRADER_EVENT_ONLOSSLONG "onLossLong"
-#define CEXPERT_TRADER_EVENT_ONLOSSSHORT "onLossShort"
+#define CTRADER_EVENT_ONOPEN "onOpen"
+#define CTRADER_EVENT_ONOPENLONG "onOpenLong"
+#define CTRADER_EVENT_ONOPENSHORT "onOpenShort"
+#define CTRADER_EVENT_ONCLOSE "onClose"
+#define CTRADER_EVENT_ONCLOSELONG "onCloseLong"
+#define CTRADER_EVENT_ONCLOSESHORT "onCloseShort"
+#define CTRADER_EVENT_ONPROFIT "onProfit"
+#define CTRADER_EVENT_ONPROFITLONG "onProfitLong"
+#define CTRADER_EVENT_ONPROFITSHORT "onProfitShort"
+#define CTRADER_EVENT_ONLOSS "onLoss"
+#define CTRADER_EVENT_ONLOSSLONG "onLossLong"
+#define CTRADER_EVENT_ONLOSSSHORT "onLossShort"
 
-//--- expert trader class
-class CExpertTrader : public CExpertBase
+//--- trader class
+class CTrader
 {
 private:
    //--- deal info instance
@@ -63,7 +63,7 @@ public:
    bool m_position_open;
 
    //--- constructor
-   CExpertTrader(int);
+   CTrader(int);
 
    //--- init routine
    bool Init(void);
@@ -83,34 +83,34 @@ public:
    bool Profit(double &, double &);
 };
 
-CExpertTrader::CExpertTrader(int t_magicNumber)
+CTrader::CTrader(int t_magicNumber)
     : m_magic_number(t_magicNumber),
       m_time_init(TimeCurrent()),
       m_position_open(false)
 {
 }
 
-CDealInfo *CExpertTrader::Deal()
+CDealInfo *CTrader::Deal()
 {
    return m_deal;
 }
 
-CPositionInfo *CExpertTrader::Position()
+CPositionInfo *CTrader::Position()
 {
    return m_position;
 }
 
-CTrade *CExpertTrader::Trade()
+CTrade *CTrader::Trade()
 {
    return m_trade;
 }
 
-CArrayObj *CExpertTrader::OrdersParameters()
+CArrayObj *CTrader::OrdersParameters()
 {
    return m_orders_parameters;
 }
 
-bool CExpertTrader::Init()
+bool CTrader::Init()
 {
    //-- init trade instance
    m_trade = new CTrade();
@@ -136,7 +136,7 @@ bool CExpertTrader::Init()
    return true;
 }
 
-bool CExpertTrader::DeInit()
+bool CTrader::DeInit()
 {
    //--- close open positions
    if (IsPositionOpen() && !Close())
@@ -145,7 +145,7 @@ bool CExpertTrader::DeInit()
    return true;
 }
 
-bool CExpertTrader::IsPositionOpen()
+bool CTrader::IsPositionOpen()
 {
    return m_position_open;
    //--- try select position
@@ -164,7 +164,7 @@ bool CExpertTrader::IsPositionOpen()
    return true;
 }
 
-bool CExpertTrader::UpdateIsPositionOpenFlag()
+bool CTrader::UpdateIsPositionOpenFlag()
 {
    //--- try select position
    if (!Position().SelectByMagic(SymbolInfo().Name(), m_magic_number))
@@ -186,7 +186,7 @@ bool CExpertTrader::UpdateIsPositionOpenFlag()
    return true;
 }
 
-bool CExpertTrader::Profit(double &profit, double &pips)
+bool CTrader::Profit(double &profit, double &pips)
 {
    //--- check if any position is open
    if (IsPositionOpen())
@@ -232,19 +232,19 @@ bool CExpertTrader::Profit(double &profit, double &pips)
 }
 
 //--- open long routine
-bool CExpertTrader::OpenLong(COrderParameters &t_order_parameters)
-{
-   return Open(ORDER_TYPE_SELL, t_order_parameters);
-}
-
-//--- open short routine
-bool CExpertTrader::OpenShort(COrderParameters &t_order_parameters)
+bool CTrader::OpenLong(COrderParameters &t_order_parameters)
 {
    return Open(ORDER_TYPE_BUY, t_order_parameters);
 }
 
+//--- open short routine
+bool CTrader::OpenShort(COrderParameters &t_order_parameters)
+{
+   return Open(ORDER_TYPE_SELL, t_order_parameters);
+}
+
 //--- open routine
-bool CExpertTrader::Open(ENUM_ORDER_TYPE t_order_type, COrderParameters &t_order_parameters)
+bool CTrader::Open(ENUM_ORDER_TYPE t_order_type, COrderParameters &t_order_parameters)
 {
    //--- test if position is already open
    if ((m_lastOrderParameters.OnePerBar() &&
@@ -294,21 +294,21 @@ bool CExpertTrader::Open(ENUM_ORDER_TYPE t_order_type, COrderParameters &t_order
    //--- set position open flag
    UpdateIsPositionOpenFlag();
    //--- emit event
-   Events().Emit(CEXPERT_TRADER_EVENT_ONOPEN);
-   if (t_order_parameters.OrderType() == ORDER_TYPE_SELL)
+   Events().Emit(CTRADER_EVENT_ONOPEN);
+   if (t_order_parameters.OrderType() == ORDER_TYPE_BUY)
    {
-      Events().Emit(CEXPERT_TRADER_EVENT_ONOPENLONG);
+      Events().Emit(CTRADER_EVENT_ONOPENLONG);
    }
    else
    {
-      Events().Emit(CEXPERT_TRADER_EVENT_ONOPENSHORT);
+      Events().Emit(CTRADER_EVENT_ONOPENSHORT);
    }
    //--- operation succeed
    return true;
 }
 
 //--- close routine
-bool CExpertTrader::Close()
+bool CTrader::Close()
 {
    //--- close position
    if (!Trade().PositionClose(SymbolInfo().Name()))
@@ -331,18 +331,18 @@ bool CExpertTrader::Close()
    //--- store short flag
    bool shortPosition = Trade().RequestType() % 2 == 0;
    //--- emit event
-   Events().Emit(CEXPERT_TRADER_EVENT_ONCLOSE);
+   Events().Emit(CTRADER_EVENT_ONCLOSE);
    //--- if short
    if (shortPosition)
    {
       //--- emit event
-      Events().Emit(CEXPERT_TRADER_EVENT_ONCLOSESHORT);
+      Events().Emit(CTRADER_EVENT_ONCLOSESHORT);
    }
    //--- else long
    else
    {
       //--- emit event
-      Events().Emit(CEXPERT_TRADER_EVENT_ONCLOSELONG);
+      Events().Emit(CTRADER_EVENT_ONCLOSELONG);
    }
    //--- get profit
    Profit(profitValue, profitPips);
@@ -350,17 +350,17 @@ bool CExpertTrader::Close()
    if (profitValue > 0)
    {
       //--- emit event
-      Events().Emit(CEXPERT_TRADER_EVENT_ONPROFIT);
+      Events().Emit(CTRADER_EVENT_ONPROFIT);
       //--- test loss type
       if (shortPosition)
       {
          //--- emit buy loss type
-         Events().Emit(CEXPERT_TRADER_EVENT_ONPROFITSHORT);
+         Events().Emit(CTRADER_EVENT_ONPROFITSHORT);
       }
       else
       {
          //--- emit buy loss type
-         Events().Emit(CEXPERT_TRADER_EVENT_ONPROFITLONG);
+         Events().Emit(CTRADER_EVENT_ONPROFITLONG);
       }
    }
    else
@@ -368,17 +368,17 @@ bool CExpertTrader::Close()
        if (profitValue < 0)
    {
       //--- emit event
-      Events().Emit(CEXPERT_TRADER_EVENT_ONLOSS);
+      Events().Emit(CTRADER_EVENT_ONLOSS);
       //--- test loss type
       if (shortPosition)
       {
          //--- emit buy loss type
-         Events().Emit(CEXPERT_TRADER_EVENT_ONLOSSSHORT);
+         Events().Emit(CTRADER_EVENT_ONLOSSSHORT);
       }
       else
       {
          //--- emit buy loss type
-         Events().Emit(CEXPERT_TRADER_EVENT_ONLOSSLONG);
+         Events().Emit(CTRADER_EVENT_ONLOSSLONG);
       }
    }
    //--- operation succeed
