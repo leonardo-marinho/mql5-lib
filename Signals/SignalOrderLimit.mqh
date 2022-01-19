@@ -1,38 +1,41 @@
 //+------------------------------------------------------------------+
-//|                                                       Signal.mq5 |
+//|                                             SignalOrderLimit.mq5 |
 //|                                 Copyright 2021, Leonardo Marinho |
 //|                          https://github.com/dev-marinho/mql5-lib |
 //+------------------------------------------------------------------+
-#ifndef __C__SIGNAL__
-#define __C__SIGNAL__
+#ifndef __C__SIGNAL_ORDER_LIMIT__
+#define __C__SIGNAL_ORDER_LIMIT__
 //+------------------------------------------------------------------+
 //| Include                                                          |
 //+------------------------------------------------------------------+
-#include <mql5-lib/Routine.mqh>
+#include <mql5-lib/Signals/Signal.mqh>
 //+------------------------------------------------------------------+
-//| A signal class that trigger at given conditions                  |
+//| A signal based on a given limit to peding orders                 |
 //+------------------------------------------------------------------+
-class CSignal : public CRoutine
+class CSignalOrderLimit : public CSignal
 {
 protected:
-   //--- identification property
-   string m_name;
+  //--- limit of orders volume
+  double m_limit_orders_volume;
 
 public:
-   CSignal(string);
-
-   //--- methods to access properties
-   string Name(void) { return m_name; }
-
-   //--- method to write condition
-   virtual bool CheckConditional(void) { return false; }
+  CSignalOrderLimit(double);
+  //--- method to write condition
+  virtual bool CheckConditional(void);
 };
 //+------------------------------------------------------------------+
 //| Constructor                                                      |
 //+------------------------------------------------------------------+
-CSignal::CSignal(string t_name = "")
-    : m_name(t_name)
+CSignalOrderLimit::CSignalOrderLimit(double t_limit_orders_volume)
+    : m_limit_orders_volume(t_limit_orders_volume)
 {
+}
+//+------------------------------------------------------------------+
+//| Conditional to be tested                                         |
+//+------------------------------------------------------------------+
+bool CSignalOrderLimit::CheckConditional()
+{
+  return OrdersTotal() < m_limit_orders_volume;
 }
 #endif
 //+------------------------------------------------------------------+

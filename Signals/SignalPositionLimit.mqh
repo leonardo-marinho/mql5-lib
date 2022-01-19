@@ -1,38 +1,41 @@
 //+------------------------------------------------------------------+
-//|                                                       Signal.mq5 |
+//|                                          SignalPositionLimit.mq5 |
 //|                                 Copyright 2021, Leonardo Marinho |
 //|                          https://github.com/dev-marinho/mql5-lib |
 //+------------------------------------------------------------------+
-#ifndef __C__SIGNAL__
-#define __C__SIGNAL__
+#ifndef __C__SIGNAL_POSITION_LIMIT__
+#define __C__SIGNAL_POSITION_LIMIT__
 //+------------------------------------------------------------------+
 //| Include                                                          |
 //+------------------------------------------------------------------+
-#include <mql5-lib/Routine.mqh>
+#include <mql5-lib/Signals/Signal.mqh>
 //+------------------------------------------------------------------+
-//| A signal class that trigger at given conditions                  |
+//| A signal based on a given limit to peding positions              |
 //+------------------------------------------------------------------+
-class CSignal : public CRoutine
+class CSignalPositionLimit : public CSignal
 {
 protected:
-   //--- identification property
-   string m_name;
+  //--- limit of positions volume
+  double m_limit_positions_volume;
 
 public:
-   CSignal(string);
-
-   //--- methods to access properties
-   string Name(void) { return m_name; }
-
-   //--- method to write condition
-   virtual bool CheckConditional(void) { return false; }
+  CSignalPositionLimit(double);
+  //--- method to write condition
+  virtual bool CheckConditional(void);
 };
 //+------------------------------------------------------------------+
 //| Constructor                                                      |
 //+------------------------------------------------------------------+
-CSignal::CSignal(string t_name = "")
-    : m_name(t_name)
+CSignalPositionLimit::CSignalPositionLimit(double t_limit_positions_volume)
+    : m_limit_positions_volume(t_limit_positions_volume)
 {
+}
+//+------------------------------------------------------------------+
+//| Conditional to be tested                                         |
+//+------------------------------------------------------------------+
+bool CSignalPositionLimit::CheckConditional()
+{
+  return PositionsTotal() < m_limit_positions_volume;
 }
 #endif
 //+------------------------------------------------------------------+

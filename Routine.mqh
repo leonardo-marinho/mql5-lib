@@ -15,9 +15,6 @@
 class CRoutine : public CObject
 {
 public:
-  CRoutine(void);
-  ~CRoutine(void);
-
   //--- routine methods
   virtual bool Init(void) { return true; };
   virtual bool Deinit(void) { return true; };
